@@ -31,3 +31,6 @@ error: please commit or stash them.' – falling back to merge
 Rebase failed: Cmd('git') failed due to: exit code(1)
   cmdline: git pull -v --rebase -- origin main
   stderr: 'fatal: couldn't find remote ref main' – falling back to merge
+Rebase failed: Cmd('git') failed due to: exit code(1)
+  cmdline: git pull -v --rebase -- origin main
+  stderr: 'fatal: couldn't find remote ref main' – falling back to merge
