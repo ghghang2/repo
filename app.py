@@ -7,7 +7,6 @@ from app.client import get_client
 from app.utils import stream_response
 from app.docs_extractor import extract
 
-
 # --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
@@ -89,7 +88,7 @@ def main():
         if st.button("Push to GitHub"):
             with st.spinner("Pushing to GitHub…"):
                 try:
-                    from scripts.push_to_github import main as push_main
+                    from app.push_to_github import main as push_main
                     push_main()
                     st.session_state.has_pushed = True
                     st.success("✅  Repository pushed to GitHub.")

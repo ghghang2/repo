@@ -4,7 +4,7 @@ Entry point that wires the `RemoteClient` together.
 """
 
 from pathlib import Path
-from remote import RemoteClient, REPO_NAME
+from .remote import RemoteClient, REPO_NAME
 
 def main() -> None:
     """Create/attach the remote, pull, commit and push."""
