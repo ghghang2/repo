@@ -39,38 +39,10 @@ def run(cmd, *, shell=False, cwd=None, env=None, capture=False):
         )
         sys.exit(exc.returncode)
 
-
 def is_port_in_use(port):
     """Check if a port is already in use."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(("localhost", port)) == 0
-
-
-def get_ngrok_url(max_attempts=30, delay=0.5):
-    """Retrieve the public URL for the Streamlit tunnel."""
-    for attempt in range(max_attempts):
-        try:
-            req = urllib.request.Request(
-                "http://127.0.0.1:4040/api/tunnels",
-                headers={"User-Agent": "Mozilla/5.0"},
-            )
-            with urllib.request.urlopen(req, timeout=5) as r:
-                data = json.loads(r.read().decode())
-                for t in data.get("tunnels", []):
-                    # ngrok sometimes reports the addr as "0.0.0.0:8002"
-                    if (
-                        t.get("proto") == "http"
-                        and str(t.get("addr", "")).endswith(":8002")
-                    ):
-                        return t["public_url"]
-        except urllib.error.URLError:
-            if attempt == 0:
-                print("Waiting for ngrok API to start...")
-        except Exception as e:
-            print(f"Attempt {attempt + 1} failed: {str(e)[:100]}")
-        time.sleep(delay)
-    return None
-
 
 # --------------------------------------------------------------------------- #
 # Main routine
@@ -107,7 +79,7 @@ def main():
 
     # 3. Start llama‑server
     llama_log = Path("llama_server.log").open("w", encoding="utf-8")
-    llama_proc = subprocess.Popen(
+    subprocess.Popen(
         [
             "./llama-server",
             "-hf",
@@ -123,7 +95,6 @@ def main():
     print("✅ llama-server started")
 
     # 4. Install required Python packages
-    run("pip install --upgrade pip", shell=True)
     run("pip install streamlit pyngrok pygithub", shell=True)
 
     # 5. Start the Streamlit UI
@@ -146,57 +117,23 @@ def main():
     # Give Streamlit time to start
     time.sleep(3)
 
-    # 6. Start ngrok
-    ngrok_cmd = [
-        "ngrok",
-        "http",
-        "--authtoken",
-        NGROK_TOKEN,
-        "--log",
-        "ngrok.log",
-        "8002",
-    ]
-    ngrok_proc = subprocess.Popen(
-        ngrok_cmd,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        start_new_session=True,
-    )
-    print("✅ ngrok started")
+    # 6. Create ngrok tunnel via pyngrok
+    try:
+        from pyngrok import ngrok
+    except ImportError:
+        sys.exit("[ERROR] pyngrok is not installed")
 
-    # Wait a moment for ngrok to initialize
-    time.sleep(2)
-
-    # Check if ngrok is still running
-    if ngrok_proc.poll() is not None:
-        sys.exit("[ERROR] ngrok process failed to start or exited immediately")
-
-    # 7. Get the public URL
-    tunnel_url = get_ngrok_url(max_attempts=40, delay=0.5)
-
-    if not tunnel_url:
-        # Try alternative approach using pyngrok
-        try:
-            from pyngrok import ngrok
-
-            tunnels = ngrok.get_tunnels()
-            for tunnel in tunnels:
-                if "8002" in tunnel.config["addr"]:
-                    tunnel_url = tunnel.public_url
-                    break
-        except Exception as e:
-            print(f"[WARNING] Failed to use pyngrok: {e}")
-
-    if not tunnel_url:
-        sys.exit("[ERROR] Could not obtain ngrok URL after multiple attempts")
-
+    # Configure ngrok
+    ngrok.set_auth_token(NGROK_TOKEN)
+    # Create the tunnel (http -> 8002)
+    tunnel = ngrok.connect(8002, "http")
+    tunnel_url = tunnel.public_url
     print(f"✅ Streamlit UI is publicly available at: {tunnel_url}")
     print("Services are running in the background.")
-    print("Check llama_server.log and ngrok.log for details.")
+    print("Check llama_server.log for details.")
 
     # Exit immediately – all services are detached.
     sys.exit(0)
-
 
 if __name__ == "__main__":
     main()
