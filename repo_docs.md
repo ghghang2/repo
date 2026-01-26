@@ -166,7 +166,6 @@ from app.config import DEFAULT_SYSTEM_PROMPT
 from app.client import get_client
 from app.utils import stream_response
 from app.docs_extractor import extract
-import push_to_github
 
 
 # --------------------------------------------------------------------------- #
@@ -250,7 +249,8 @@ def main():
         if st.button("Push to GitHub"):
             with st.spinner("Pushing to GitHub…"):
                 try:
-                    push_to_github.main()
+                    from scripts.push_to_github import main as push_main
+                    push_main()
                     st.session_state.has_pushed = True
                     st.success("✅  Repository pushed to GitHub.")
                 except Exception as exc:
@@ -293,11 +293,17 @@ def main():
     components.html(
         f"""
         <script>
-        window.hasPushed = {str(has_pushed).lower()};
-        window.onbeforeunload = function(e) {{
-          if (!window.hasPushed) {{
+        // Make the flag visible to the outer window
+        window.top.hasPushed = {str(has_pushed).lower()};
+
+        // Attach the unload guard to the outer window
+        window.top.onbeforeunload = function (e) {{
+            if (!window.top.hasPushed) {{
+            // Modern browsers require e.preventDefault() + e.returnValue
+            e.preventDefault();
+            e.returnValue = '';
             return 'You have not pushed to GitHub yet.\\nDo you really want to leave?';
-          }}
+            }}
         }};
         </script>
         """,
@@ -309,28 +315,30 @@ if __name__ == "__main__":
     main()
 ```
 
-## push_to_github.py
+## remote/__init__.py
 
 ```python
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+# remote/__init__.py
+"""
+Public API for the remote adapter.
 
-import os
-import sys
-import shutil
-from pathlib import Path
+Only the `RemoteClient` class is meant to be imported by other packages.
+"""
 
-from github import Github, GithubException
-from github.Auth import Token
-from git import Repo, GitCommandError, InvalidGitRepositoryError
+from .remote import RemoteClient
+from .config import USER_NAME, REPO_NAME, IGNORED_ITEMS
+```
 
-# ------------------------------------------------------------------
-# USER SETTINGS
-# ------------------------------------------------------------------
-LOCAL_DIR   = Path(__file__).parent          # folder you want to push
-REPO_NAME   = "v1.1"                            # GitHub repo name
-USER_NAME   = "ghghang2"                      # e.g. ghghang2
+## remote/config.py
 
+```python
+# remote/config.py
+"""
+Configuration constants for the remote (Git/GitHub) adapter.
+"""
+
+USER_NAME = "ghghang2"          # GitHub user / org name
+REPO_NAME = "v1.1"              # Repository to push to
 IGNORED_ITEMS = [
     ".config",
     ".ipynb_checkpoints",
@@ -339,133 +347,199 @@ IGNORED_ITEMS = [
     "nohup.out",
     "__pycache__",
 ]
+```
 
-# ------------------------------------------------------------------
-# HELPERS
-# ------------------------------------------------------------------
-def token() -> str:
-    """Get the PAT from the environment."""
+## remote/remote.py
+
+```python
+# remote/remote.py
+"""
+A single, self‑contained adapter that knows how to talk to:
+  * a local Git repository (via gitpython)
+  * GitHub (via PyGithub)
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+import os
+import shutil
+import logging
+from typing import Optional
+
+from git import Repo, GitCommandError, InvalidGitRepositoryError
+from github import Github, GithubException
+from github.Auth import Token
+from github.Repository import Repository
+
+from .config import USER_NAME, REPO_NAME, IGNORED_ITEMS
+
+log = logging.getLogger(__name__)
+
+def _token() -> str:
+    """Return the GitHub PAT from the environment."""
     t = os.getenv("GITHUB_TOKEN")
     if not t:
-        print("Error: GITHUB_TOKEN env variable not set.")
-        sys.exit(1)
+        raise RuntimeError("GITHUB_TOKEN env variable not set")
     return t
 
-def remote_url() -> str:
-    """HTTPS URL that contains the token (used only for git push)."""
-    return f"https://{USER_NAME}:{token()}@github.com/{USER_NAME}/{REPO_NAME}.git"
+def _remote_url() -> str:
+    """HTTPS URL that contains the PAT – used only for git push."""
+    return f"https://{USER_NAME}:{_token()}@github.com/{USER_NAME}/{REPO_NAME}.git"
 
-def ensure_remote(repo: Repo, url: str) -> None:
-    """Delete any existing `origin` remote and create a fresh one."""
-    if "origin" in repo.remotes:
-        repo.delete_remote("origin")
-    repo.create_remote("origin", url)
+class RemoteClient:
+    """Thin wrapper around gitpython + PyGithub that knows how to create
+    a repo, fetch/pull/push and keep the local repo up‑to‑date.
+    """
 
-def create_repo_if_missing(g: Github) -> None:
-    """Create the GitHub repo if it does not already exist."""
-    user = g.get_user()
-    try:
-        user.get_repo(REPO_NAME)
-        print(f"Repo '{REPO_NAME}' already exists on GitHub.")
-    except GithubException:
-        user.create_repo(REPO_NAME, private=False)
-        print(f"Created repo '{REPO_NAME}' on GitHub.")
-
-def write_gitignore(repo_path: Path, items: list[str]) -> None:
-    """Write a .gitignore file with the supplied items."""
-    gitignore_path = repo_path / ".gitignore"
-    gitignore_path.write_text("\n".join(items) + "\n")
-    print(f"Created .gitignore at {gitignore_path}")
-
-# ------------------------------------------------------------------
-# MAIN
-# ------------------------------------------------------------------
-def main() -> None:
-    if not LOCAL_DIR.is_dir():
-        print(f"Local directory '{LOCAL_DIR}' not found.")
-        sys.exit(1)
-
-    repo_path = LOCAL_DIR
-
-    # Open or initialise repo
-    try:
-        repo = Repo(repo_path)
-        if repo.bare:
-            raise InvalidGitRepositoryError(repo_path)
-        print(f"Using existing git repo at {repo_path}")
-    except (InvalidGitRepositoryError, GitCommandError):
-        repo = Repo.init(repo_path)
-        print(f"Initialised new git repo at {repo_path}")
-
-    # Create the remote repo on GitHub (if needed)
-    g = Github(auth=Token(token()))
-    create_repo_if_missing(g)
-
-    # Attach the remote URL
-    ensure_remote(repo, remote_url())
-
-    # Create .gitignore
-    write_gitignore(repo_path, IGNORED_ITEMS)
-
-    # Stage everything (ignores applied)
-    repo.git.add(A=True)
-
-    # Commit – ignore “nothing to commit” error
-    try:
-        repo.index.commit("Initial commit")
-        print("Committed changes.")
-    except GitCommandError as e:
-        if "nothing to commit" in str(e):
-            print("Nothing new to commit.")
-        else:
-            raise
-
-    # Switch to / create the local 'main' branch
-    if "main" not in [b.name for b in repo.branches]:
-        repo.git.checkout("-b", "main")
-        print("Created local branch 'main'.")
-    else:
-        repo.git.checkout("main")
-        print("Switched to existing branch 'main'.")
-
-    # *** NEW: discard any stale merge‑conflict files ***
-    repo.git.reset("--hard")
-
-    # ------------------------------------------------------------------
-    # Pull the latest changes from the remote so we can push
-    # ------------------------------------------------------------------
-    try:
-        # Clean up a stale rebase directory if it exists
-        rebase_dir = repo_path / ".git" / "rebase-merge"
-        if rebase_dir.exists():
-            shutil.rmtree(rebase_dir)
-            print("Removed stale rebase-merge directory.")
-
-        # Tell Git that we want to rebase automatically
-        repo.git.config('pull.rebase', 'true')
-
-        # Rebase local commits onto the fetched remote branch.
-        repo.git.pull('--rebase', 'origin', 'main')
-    except GitCommandError as exc:
-        print(f"Rebase failed: {exc}. Falling back to merge.")
-
-        # Ensure we have a Git identity (local config is sufficient)
-        repo.git.config('user.email', 'you@example.com')
-        repo.git.config('user.name', 'Your Name')
-
+    def __init__(self, local_path: Path | str):
+        self.local_path = Path(local_path).resolve()
         try:
-            repo.git.merge('origin/main')
-        except GitCommandError as merge_exc:
-            print(f"Merge also failed: {merge_exc}. Aborting push.")
-            sys.exit(1)
+            self.repo = Repo(self.local_path)
+            if self.repo.bare:
+                raise InvalidGitRepositoryError(self.local_path)
+        except (InvalidGitRepositoryError, GitCommandError):
+            log.info("Initializing a fresh git repo at %s", self.local_path)
+            self.repo = Repo.init(self.local_path)
 
-    # Push to the remote and set upstream
-    try:
-        repo.git.push('-u', 'origin', 'main')
-        print("Push complete. Remote 'main' is now tracked.")
-    except GitCommandError as exc:
-        print(f"Git operation failed: {exc}")
-        sys.exit(1)
+        self.github = Github(auth=Token(_token()))
+        self.user = self.github.get_user()
+
+    # ------------------------------------------------------------------ #
+    #  Local‑repo helpers
+    # ------------------------------------------------------------------ #
+    def is_clean(self) -> bool:
+        """Return True if there are no uncommitted changes."""
+        return not self.repo.is_dirty(untracked_files=True)
+
+    def fetch(self) -> None:
+        """Fetch from the remote (if it exists)."""
+        if "origin" in self.repo.remotes:
+            log.info("Fetching from origin…")
+            self.repo.remotes.origin.fetch()
+        else:
+            log.info("No remote configured – skipping fetch")
+
+    def pull(self, rebase: bool = True) -> None:
+        """Pull the `main` branch from origin, optionally rebasing."""
+        if "origin" not in self.repo.remotes:
+            raise RuntimeError("No remote named 'origin' configured")
+
+        branch = "main"
+        log.info("Pulling %s%s…", branch, " (rebase)" if rebase else "")
+        try:
+            if rebase:
+                self.repo.remotes.origin.pull(branch, "--rebase")
+            else:
+                self.repo.remotes.origin.pull(branch)
+        except GitCommandError as exc:
+            log.warning("Rebase failed: %s – falling back to merge", exc)
+            self.repo.git.merge(f"origin/{branch}")
+
+    def push(self, remote: str = "origin") -> None:
+        """Push the local `main` branch to the given remote."""
+        if remote not in self.repo.remotes:
+            raise RuntimeError(f"No remote named '{remote}'")
+        log.info("Pushing to %s…", remote)
+        self.repo.remotes[remote].push("main")
+
+    def reset_hard(self) -> None:
+        """Discard any uncommitted or stale merge‑conflict data."""
+        self.repo.git.reset("--hard")
+
+    # ------------------------------------------------------------------ #
+    #  GitHub helpers
+    # ------------------------------------------------------------------ #
+    def ensure_repo(self, name: str = REPO_NAME) -> Repository:
+        """Create the GitHub repo if it does not exist and return it."""
+        try:
+            repo = self.user.get_repo(name)
+            log.info("Repo '%s' already exists on GitHub", name)
+        except GithubException:
+            log.info("Creating new repo '%s' on GitHub", name)
+            repo = self.user.create_repo(name, private=False)
+        return repo
+
+    def attach_remote(self, url: Optional[str] = None) -> None:
+        """Delete any existing `origin` remote and add a fresh one."""
+        if url is None:
+            url = _remote_url()
+        if "origin" in self.repo.remotes:
+            log.info("Removing old origin remote")
+            self.repo.delete_remote("origin")
+        log.info("Adding new origin remote: %s", url)
+        self.repo.create_remote("origin", url)
+
+    # ------------------------------------------------------------------ #
+    #  Convenience helpers
+    # ------------------------------------------------------------------ #
+    def write_gitignore(self) -> None:
+        """Create a .gitignore that matches the constants in config.py."""
+        path = self.local_path / ".gitignore"
+        content = "\n".join(IGNORED_ITEMS) + "\n"
+        path.write_text(content, encoding="utf-8")
+        log.info("Wrote %s", path)
+
+    def commit_all(self, message: str = "Initial commit") -> None:
+        """Stage everything and commit (ignoring the 'nothing to commit' error)."""
+        self.repo.git.add(A=True)
+        try:
+            self.repo.index.commit(message)
+            log.info("Committed: %s", message)
+        except GitCommandError as exc:
+            if "nothing to commit" in str(exc):
+                log.info("Nothing new to commit")
+            else:
+                raise
+```
+
+## scripts/__init__.py
+
+```python
+
+```
+
+## scripts/push_to_github.py
+
+```python
+# scripts/push_to_github.py
+"""
+Entry point that wires the `RemoteClient` together.
+"""
+
+from pathlib import Path
+from remote import RemoteClient, REPO_NAME
+
+def main() -> None:
+    """Create/attach the remote, pull, commit and push."""
+    client = RemoteClient(Path(__file__).resolve().parent.parent)  # repo root
+
+    # 1️⃣  Ensure the GitHub repo exists
+    client.ensure_repo(REPO_NAME)
+
+    # 2️⃣  Attach (or re‑attach) the HTTPS remote
+    client.attach_remote()
+
+    # 3️⃣  Pull the latest changes
+    client.fetch()
+    client.pull()
+
+    # 4️⃣  Write .gitignore (idempotent)
+    client.write_gitignore()
+
+    # 5️⃣  Commit everything that is new / changed
+    client.commit_all("Initial commit")
+
+    # 6️⃣  Make sure we are on the main branch
+    if "main" not in [b.name for b in client.repo.branches]:
+        client.repo.git.checkout("-b", "main")
+        client.repo.git.reset("--hard")
+    else:
+        client.repo.git.checkout("main")
+        client.repo.git.reset("--hard")
+
+    # 7️⃣  Push to GitHub
+    client.push()
 
 if __name__ == "__main__":
     main()
