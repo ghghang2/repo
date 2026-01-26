@@ -16,8 +16,8 @@ from git import Repo, GitCommandError, InvalidGitRepositoryError
 # USER SETTINGS
 # ------------------------------------------------------------------
 LOCAL_DIR   = Path(__file__).parent          # folder you want to push
-REPO_NAME   = "v1"                      # GitHub repo name
-USER_NAME   = "ghghang2"         # e.g. ghghang2
+REPO_NAME   = "v1"                            # GitHub repo name
+USER_NAME   = "ghghang2"                      # e.g. ghghang2
 
 IGNORED_ITEMS = [
     ".config",
@@ -44,11 +44,13 @@ def remote_url() -> str:
     return f"https://{USER_NAME}:{token()}@github.com/{USER_NAME}/{REPO_NAME}.git"
 
 def ensure_remote(repo: Repo, url: str) -> None:
+    """Delete any existing `origin` remote and create a fresh one."""
     if "origin" in repo.remotes:
         repo.delete_remote("origin")
     repo.create_remote("origin", url)
 
 def create_repo_if_missing(g: Github) -> None:
+    """Create the GitHub repo if it does not already exist."""
     user = g.get_user()
     try:
         user.get_repo(REPO_NAME)
@@ -58,6 +60,7 @@ def create_repo_if_missing(g: Github) -> None:
         print(f"Created repo '{REPO_NAME}' on GitHub.")
 
 def write_gitignore(repo_path: Path, items: list[str]) -> None:
+    """Write a .gitignore file with the supplied items."""
     gitignore_path = repo_path / ".gitignore"
     gitignore_path.write_text("\n".join(items) + "\n")
     print(f"Created .gitignore at {gitignore_path}")
@@ -112,6 +115,19 @@ def main() -> None:
     else:
         repo.git.checkout("main")
         print("Switched to existing branch 'main'.")
+
+    # ------------------------------------------------------------------
+    # Pull the latest changes from the remote so we can push
+    # ------------------------------------------------------------------
+    try:
+        # Fast‑forward merge (default)
+        repo.git.pull("origin", "main")
+    except GitCommandError as exc:
+        # If a fast‑forward isn’t possible, try a rebase
+        if "non-fast-forward" in str(exc):
+            repo.git.pull("--rebase", "origin", "main")
+        else:
+            raise
 
     # Push to the remote and set upstream
     try:
