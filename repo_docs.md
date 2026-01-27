@@ -672,7 +672,103 @@ tunnels:
     print("\n📝 Service info saved to: service_info.json")
     print("📝 Tunnel URL saved to: tunnel_url.txt")
 
+def status():
+    """Check the status of running services."""
+    if not Path("service_info.json").exists():
+        print("❌ No service info found. Services may not be running.")
+        return
+    
+    with open("service_info.json", "r") as f:
+        info = json.load(f)
+    
+    print("\n" + "="*70)
+    print("SERVICE STATUS")
+    print("="*70)
+    print(f"Started at: {info['started_at']}")
+    print(f"Public URL: {info['tunnel_url']}")
+    print(f"llama-server PID: {info['llama_server_pid']}")
+    print(f"Streamlit PID: {info['streamlit_pid']}")
+    print(f"ngrok PID: {info['ngrok_pid']}")
+    print("="*70)
+    
+    # Check if processes are still running
+    for name, pid in [("llama-server", info['llama_server_pid']), 
+                       ("Streamlit", info['streamlit_pid']),
+                       ("ngrok", info['ngrok_pid'])]:
+        try:
+            os.kill(pid, 0)  # Check if process exists
+            print(f"✅ {name} is running (PID: {pid})")
+        except OSError:
+            print(f"❌ {name} is NOT running (PID: {pid})")
+    
+    # Verify tunnel is still active
+    print("\n🔍 Checking ngrok tunnel status...")
+    try:
+        tunnel_url = get_ngrok_tunnel_url(max_attempts=2, interval=1)
+        if tunnel_url:
+            print(f"✅ Tunnel is active: {tunnel_url}")
+        else:
+            print("⚠️  Could not verify tunnel status")
+    except Exception as e:
+        print(f"⚠️  Tunnel check failed: {e}")
+    
+    print("\n📋 Recent log entries:")
+    print("\n--- llama_server.log (last 5 lines) ---")
+    if Path("llama_server.log").exists():
+        run("tail -5 llama_server.log", shell=True)
+    
+    print("\n--- streamlit.log (last 5 lines) ---")
+    if Path("streamlit.log").exists():
+        run("tail -5 streamlit.log", shell=True)
+    
+    print("\n--- ngrok.log (last 5 lines) ---")
+    if Path("ngrok.log").exists():
+        run("tail -5 ngrok.log", shell=True)
+
+
+def stop():
+    """Stop all running services."""
+    if not Path("service_info.json").exists():
+        print("❌ No service info found. Services may not be running.")
+        return
+    
+    with open("service_info.json", "r") as f:
+        info = json.load(f)
+    
+    print("🛑 Stopping services...")
+    
+    for name, pid in [("llama-server", info['llama_server_pid']), 
+                       ("Streamlit", info['streamlit_pid']),
+                       ("ngrok", info['ngrok_pid'])]:
+        try:
+            os.kill(pid, 15)  # SIGTERM
+            print(f"✅ Stopped {name} (PID: {pid})")
+            time.sleep(0.5)  # Give process time to terminate
+        except OSError:
+            print(f"⚠️  {name} (PID: {pid}) was not running")
+    
+    print("\n✅ All services stopped")
+    
+    # Clean up service info file
+    try:
+        os.remove("service_info.json")
+        os.remove("tunnel_url.txt")
+        print("🧹 Cleaned up service info files")
+    except Exception:
+        pass
+
+
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "--status":
+            status()
+        elif sys.argv[1] == "--stop":
+            stop()
+        else:
+            print(f"Unknown command: {sys.argv[1]}")
+            print("Usage: python launch_demo.py [--status|--stop]")
+            sys.exit(1)
+    else:
+        main()
 ```
 
