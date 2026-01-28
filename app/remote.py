@@ -66,6 +66,14 @@ class RemoteClient:
             raise RuntimeError("No remote named 'origin' configured")
 
         branch = "main"
+
+        # Check if the remote has the branch
+        try:
+            remote_branch = self.repo.remotes.origin.refs[branch]
+        except IndexError:
+            log.warning("Remote branch %s does not exist – skipping pull", branch)
+            return
+
         log.info("Pulling %s%s…", branch, " (rebase)" if rebase else "")
         try:
             if rebase:

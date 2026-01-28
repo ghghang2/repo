@@ -40,7 +40,7 @@ DEFAULT_SYSTEM_PROMPT = "Be concise and accurate at all times"
 #  GitHub repository details
 # --------------------------------------------------------------------------- #
 USER_NAME = "ghghang2"
-REPO_NAME = "v1.1"
+REPO_NAME = "v1.2"
 
 # --------------------------------------------------------------------------- #
 #  Items to ignore in the repo
@@ -135,7 +135,7 @@ def main() -> None:
     client.attach_remote()          # 2️⃣  Attach (or re‑attach) the HTTPS remote
 
     client.fetch()                  # 3️⃣  Pull latest changes
-    client.pull()
+    client.pull(rebase=False)
 
     client.write_gitignore()        # 4️⃣  Write .gitignore
 
