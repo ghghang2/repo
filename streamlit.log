@@ -6,8 +6,9 @@ Collecting usage statistics. To deactivate, set browser.gatherUsageStats to fals
 
   Local URL: http://localhost:8002
   Network URL: http://172.28.0.12:8002
-  External URL: http://34.53.101.117:8002
+  External URL: http://34.127.19.51:8002
 
+2026-01-31 07:37:28.705 Session with id 9be49af8-f5d7-465d-b220-c676cb451c32 is already connected! Connecting to a new session.
 [31m──[0m[31m────────────────────────[0m[31m [0m[1;31mTraceback [0m[1;2;31m(most recent call last)[0m[31m [0m[31m─────────────────────────[0m[31m──[0m
 [31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/streamlit/runtime/scriptrunner/[0m[1;33mexec_code.py[0m: [31m [0m
 [31m [0m [94m129[0m in [92mexec_func_with_error_handling[0m                                                 [31m [0m
@@ -15,165 +16,47 @@ Collecting usage statistics. To deactivate, set browser.gatherUsageStats to fals
 [31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/streamlit/runtime/scriptrunner/[0m[1;33mscript_runner[0m [31m [0m
 [31m [0m [1;33m.py[0m:[94m672[0m in [92mcode_to_exec[0m                                                              [31m [0m
 [31m [0m                                                                                      [31m [0m
-[31m [0m [2;33m/content/[0m[1;33mapp.py[0m:[94m17[0m in [92m<module>[0m                                                       [31m [0m
+[31m [0m [2;33m/content/[0m[1;33mapp.py[0m:[94m43[0m in [92m<module>[0m                                                       [31m [0m
 [31m [0m                                                                                      [31m [0m
-[31m [0m   [2m 14 [0m                                                                               [31m [0m
-[31m [0m   [2m 15 [0m[94mfrom[0m[90m [0m[4;96mapp[0m[4;96m.[0m[4;96mconfig[0m[90m [0m[94mimport[0m DEFAULT_SYSTEM_PROMPT                                   [31m [0m
-[31m [0m   [2m 16 [0m[94mfrom[0m[90m [0m[4;96mapp[0m[4;96m.[0m[4;96mclient[0m[90m [0m[94mimport[0m get_client                                              [31m [0m
-[31m [0m [31m❱ [0m 17 [1;4;94mfrom[0m[1;4;90m [0m[1;4;96mapp[0m[1;4;96m.[0m[1;4;96mtools[0m[1;4;90m [0m[1;4;94mimport[0m[1;4m get_tools, TOOLS[0m                                         [31m [0m
-[31m [0m   [2m 18 [0m[94mfrom[0m[90m [0m[4;96mapp[0m[4;96m.[0m[4;96mdocs_extractor[0m[90m [0m[94mimport[0m extract                                         [31m [0m
-[31m [0m   [2m 19 [0m                                                                               [31m [0m
-[31m [0m   [2m 20 [0m                                                                               [31m [0m
+[31m [0m   [2m 40 [0m[2m│   │   [0m[94mreturn[0m [94mFalse[0m                                                           [31m [0m
+[31m [0m   [2m 41 [0m[2m│   [0m                                                                           [31m [0m
+[31m [0m   [2m 42 [0m[2m│   [0m[94mtry[0m:                                                                       [31m [0m
+[31m [0m [31m❱ [0m 43 [2m│   [0m[1;2;4m│   [0m[1;4mre[0mpo.remotes.origin.fetch()                                            [31m [0m
+[31m [0m   [2m 44 [0m[2m│   [0m[94mexcept[0m [96mException[0m:                                                          [31m [0m
+[31m [0m   [2m 45 [0m[2m│   │   [0m[94mreturn[0m [94mFalse[0m                                                           [31m [0m
+[31m [0m   [2m 46 [0m                                                                               [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2;33m/content/[0m[1;33mapp.py[0m:[94m39[0m in [92mmain[0m                                                           [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m 36 [0m[2m│   [0m[94mexcept[0m InvalidGitRepositoryError:                                          [31m [0m
+[31m [0m   [2m 37 [0m[2m│   │   [0m[94mreturn[0m [94mFalse[0m                                                           [31m [0m
+[31m [0m   [2m 38 [0m[2m│   [0m                                                                           [31m [0m
+[31m [0m [31m❱ [0m 39 [2m│   [0m[94mif[0m [95mnot[0m repo.re[1;4mmotes:[0m                                                       [31m [0m
+[31m [0m   [2m 40 [0m[2m│   │   [0m[94mreturn[0m [94mFalse[0m                                                           [31m [0m
+[31m [0m   [2m 41 [0m[2m│   [0m                                                                           [31m [0m
+[31m [0m   [2m 42 [0m[2m│   [0m[94mtry[0m:                                                                       [31m [0m
+[31m────────────────────────────────────────────────────────────────────────────────────────[0m
+[1;91mAttributeError: [0m[32m'ChatSession'[0m object has no attribute [32m'has_pushed'[0m
+[31m──[0m[31m────────────────────────[0m[31m [0m[1;31mTraceback [0m[1;2;31m(most recent call last)[0m[31m [0m[31m─────────────────────────[0m[31m──[0m
+[31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/streamlit/runtime/scriptrunner/[0m[1;33mexec_code.py[0m: [31m [0m
+[31m [0m [94m129[0m in [92mexec_func_with_error_handling[0m                                                 [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/streamlit/runtime/scriptrunner/[0m[1;33mscript_runner[0m [31m [0m
+[31m [0m [1;33m.py[0m:[94m672[0m in [92mcode_to_exec[0m                                                              [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2;33m/content/[0m[1;33mapp.py[0m:[94m21[0m in [92m<module>[0m                                                       [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m18 [0m[2m│   │   │   [0mclient=get_client(),                                                [31m [0m
+[31m [0m   [2m19 [0m[2m│   │   │   [0msystem_prompt=[33m"[0m[33mBe concise and accurate at all times. You are empowe[0m [31m [0m
+[31m [0m   [2m20 [0m[2m│   │   │   [0mrepo_docs=st.session_state.get([33m"[0m[33mrepo_docs[0m[33m"[0m, [33m"[0m[33m"[0m),                    [31m [0m
+[31m [0m [31m❱ [0m21 [1;2;4m│   │   [0m[1;4m)[0m                                                                       [31m [0m
+[31m [0m   [2m22 [0m[2m│   [0m                                                                            [31m [0m
+[31m [0m   [2m23 [0m[2m│   [0msession: ChatSession = st.session_state.chat                                [31m [0m
+[31m [0m   [2m24 [0m                                                                                [31m [0m
 [31m────────────────────────────────────────────────────────────────────────────────────────[0m
 [91m────────────────────────────────────────────────────────────────────────────────────────[0m
-[91m [0m [2;33m /content/app/tools/[0m[1;33m__init__.py[0m[1m:[0m[1;94m129[0m                                                  [91m [0m
+[91m [0m [2;33m /content/app/[0m[1;33mchat.py[0m[1m:[0m[1;94m204[0m                                                            [91m [0m
 [91m [0m [33m""[0m"                                                                                  [91m [0m
 [91m [0m [1;91m▲[0m                                                                                    [91m [0m
 [91m────────────────────────────────────────────────────────────────────────────────────────[0m
-[1;91mSyntaxError: [0munterminated triple-quoted string literal [1m([0mdetected at line [1;36m129[0m[1m)[0m
-[31m──[0m[31m────────────────────────[0m[31m [0m[1;31mTraceback [0m[1;2;31m(most recent call last)[0m[31m [0m[31m─────────────────────────[0m[31m──[0m
-[31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/streamlit/runtime/scriptrunner/[0m[1;33mexec_code.py[0m: [31m [0m
-[31m [0m [94m129[0m in [92mexec_func_with_error_handling[0m                                                 [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/streamlit/runtime/scriptrunner/[0m[1;33mscript_runner[0m [31m [0m
-[31m [0m [1;33m.py[0m:[94m672[0m in [92mcode_to_exec[0m                                                              [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m [2;33m/content/[0m[1;33mapp.py[0m:[94m125[0m in [92m<module>[0m                                                      [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m   [2m122 [0m[2m│   [0m[94mreturn[0m full_resp, final_tool_calls                                         [31m [0m
-[31m [0m   [2m123 [0m                                                                               [31m [0m
-[31m [0m   [2m124 [0m                                                                               [31m [0m
-[31m [0m [31m❱ [0m125 [2m# ----------[0m[1;2;4m------[0m[2m----------------------------------------------------------- [0m [31m [0m
-[31m [0m   [2m126 [0m[2m#  Streamlit UI[0m                                                                [31m [0m
-[31m [0m   [2m127 [0m[2m# --------------------------------------------------------------------------- [0m [31m [0m
-[31m [0m   [2m128 [0m[94mdef[0m[90m [0m[92mmain[0m():                                                                    [31m [0m
-[31m────────────────────────────────────────────────────────────────────────────────────────[0m
-[1;91mNameError: [0mname [32m'OpenAI'[0m is not defined
-[31m──[0m[31m────────────────────────[0m[31m [0m[1;31mTraceback [0m[1;2;31m(most recent call last)[0m[31m [0m[31m─────────────────────────[0m[31m──[0m
-[31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/streamlit/runtime/scriptrunner/[0m[1;33mexec_code.py[0m: [31m [0m
-[31m [0m [94m129[0m in [92mexec_func_with_error_handling[0m                                                 [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/streamlit/runtime/scriptrunner/[0m[1;33mscript_runner[0m [31m [0m
-[31m [0m [1;33m.py[0m:[94m672[0m in [92mcode_to_exec[0m                                                              [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m [2;33m/content/[0m[1;33mapp.py[0m:[94m124[0m in [92m<module>[0m                                                      [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m   [2m121 [0m[2m│   [0mfinal_tool_calls = [96mlist[0m(tool_calls_buffer.values()) [94mif[0m tool_calls_buffer [94me[0m [31m [0m
-[31m [0m   [2m122 [0m[2m│   [0m[94mreturn[0m full_resp, final_tool_calls                                         [31m [0m
-[31m [0m   [2m123 [0m                                                                               [31m [0m
-[31m [0m [31m❱ [0m124 [94mdef[0m[90m [0m[92mprocess_tool_calls[0m(                                                        [31m [0m
-[31m [0m   [2m125 [0m[2m│   [0mclient: OpenAI,                                                            [31m [0m
-[31m [0m   [2m126 [0m[2m│   [0mmessages: List[Dict],                                                      [31m [0m
-[31m [0m   [2m127 [0m[2m│   [0mtool_calls: List[Dict],                                                    [31m [0m
-[31m────────────────────────────────────────────────────────────────────────────────────────[0m
-[1;91mNameError: [0mname [32m'Tuple'[0m is not defined
-[31m──[0m[31m────────────────────────[0m[31m [0m[1;31mTraceback [0m[1;2;31m(most recent call last)[0m[31m [0m[31m─────────────────────────[0m[31m──[0m
-[31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/streamlit/runtime/scriptrunner/[0m[1;33mexec_code.py[0m: [31m [0m
-[31m [0m [94m129[0m in [92mexec_func_with_error_handling[0m                                                 [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/streamlit/runtime/scriptrunner/[0m[1;33mscript_runner[0m [31m [0m
-[31m [0m [1;33m.py[0m:[94m672[0m in [92mcode_to_exec[0m                                                              [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m [2;33m/content/[0m[1;33mapp.py[0m:[94m317[0m in [92m<module>[0m                                                      [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m   [2m314 [0m[2m│   │   │   [0mtool_msg = {                                                       [31m [0m
-[31m [0m   [2m315 [0m[2m│   │   │   │   [0m[33m"[0m[33mrole[0m[33m"[0m: [33m"[0m[33mtool[0m[33m"[0m,                                                [31m [0m
-[31m [0m   [2m316 [0m[2m│   │   │   │   [0m[33m"[0m[33mtool_call_id[0m[33m"[0m: [96mstr[0m(tool_call.get([33m"[0m[33mid[0m[33m"[0m) [95mor[0m [33m"[0m[33m"[0m),                [31m [0m
-[31m [0m [31m❱ [0m317 [2m│   [0m[1;2;4m│   │ [0m[2m  │   [0m[33m"[0m[33mcontent[0m[33m"[0m: [96mstr[0m(tool_result [95mor[0m [33m"[0m[33m"[0m),                             [31m [0m
-[31m [0m   [2m318 [0m[2m│   │   │   [0m}                                                                  [31m [0m
-[31m [0m   [2m319 [0m[2m│   │   │   [0m                                                                   [31m [0m
-[31m [0m   [2m320 [0m[2m│   │   │   [0mmsgs2 = build_messages(                                            [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m [2;33m/content/[0m[1;33mapp.py[0m:[94m300[0m in [92mmain[0m                                                          [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m   [2m297 [0m[2m│   │   │   [0m                                                                   [31m [0m
-[31m [0m   [2m298 [0m[2m│   │   │   [0m[2m# Tell the model the result of the tool call[0m                       [31m [0m
-[31m [0m   [2m299 [0m[2m│   │   │   [0massistant_tool_call_msg = {                                        [31m [0m
-[31m [0m [31m❱ [0m300 [2m│   [0m[1;2;4m│   │   │ [0m[2m  [0m[33m"[0m[33mrole[0m[33m"[0m: [33m"[0m[33massistant[0m[33m"[0m,                                           [31m [0m
-[31m [0m   [2m301 [0m[2m│   │   │   │   [0m[33m"[0m[33mcontent[0m[33m"[0m: [94mNone[0m,                                               [31m [0m
-[31m [0m   [2m302 [0m[2m│   │   │   │   [0m[33m"[0m[33mtool_calls[0m[33m"[0m: [                                                [31m [0m
-[31m [0m   [2m303 [0m[2m│   │   │   │   │   [0m{                                                          [31m [0m
-[31m────────────────────────────────────────────────────────────────────────────────────────[0m
-[1;91mNameError: [0mname [32m'components'[0m is not defined
-[31m──[0m[31m────────────────────────[0m[31m [0m[1;31mTraceback [0m[1;2;31m(most recent call last)[0m[31m [0m[31m─────────────────────────[0m[31m──[0m
-[31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/streamlit/runtime/scriptrunner/[0m[1;33mexec_code.py[0m: [31m [0m
-[31m [0m [94m129[0m in [92mexec_func_with_error_handling[0m                                                 [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/streamlit/runtime/scriptrunner/[0m[1;33mscript_runner[0m [31m [0m
-[31m [0m [1;33m.py[0m:[94m672[0m in [92mcode_to_exec[0m                                                              [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m [2;33m/content/[0m[1;33mapp.py[0m:[94m317[0m in [92m<module>[0m                                                      [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m   [2m314 [0m                                                                               [31m [0m
-[31m [0m   [2m315 [0m                                                                               [31m [0m
-[31m [0m   [2m316 [0m[94mif[0m [91m__name__[0m == [33m"[0m[33m__main__[0m[33m"[0m:                                                     [31m [0m
-[31m [0m [31m❱ [0m317 [2m│   [0m[1;4mmain()[0m                                                                     [31m [0m
-[31m [0m   [2m318 [0m[2m# #!/usr/bin/env python3[0m                                                       [31m [0m
-[31m [0m   [2m319 [0m[2m# """[0m                                                                          [31m [0m
-[31m [0m   [2m320 [0m[2m# app.py – Streamlit UI that talks to a local llama‑server and can push the re[0m [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m [2;33m/content/[0m[1;33mapp.py[0m:[94m300[0m in [92mmain[0m                                                          [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m   [2m297 [0m[2m│   [0m[2m#  Browser‑leaving guard[0m                                                   [31m [0m
-[31m [0m   [2m298 [0m[2m│   [0m[2m# -------------------------------------------------------------------- #[0m   [31m [0m
-[31m [0m   [2m299 [0m[2m│   [0mhas_pushed = st.session_state.get([33m"[0m[33mhas_pushed[0m[33m"[0m, [94mFalse[0m)                     [31m [0m
-[31m [0m [31m❱ [0m300 [2m│   [0m[1;4mcomponents[0m.html(                                                           [31m [0m
-[31m [0m   [2m301 [0m[2m│   │   [0m[33mf[0m[33m"""[0m                                                                   [31m [0m
-[31m [0m   [2m302 [0m[2;33m│   │   [0m[33m<script>[0m                                                               [31m [0m
-[31m [0m   [2m303 [0m[2;33m│   │   [0m[33mwindow.top.hasPushed = [0m[33m{[0m[96mstr[0m(has_pushed).lower()[33m}[0m[33m;[0m                      [31m [0m
-[31m────────────────────────────────────────────────────────────────────────────────────────[0m
-[1;91mNameError: [0mname [32m'components'[0m is not defined
-[31m──[0m[31m────────────────────────[0m[31m [0m[1;31mTraceback [0m[1;2;31m(most recent call last)[0m[31m [0m[31m─────────────────────────[0m[31m──[0m
-[31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/streamlit/runtime/scriptrunner/[0m[1;33mexec_code.py[0m: [31m [0m
-[31m [0m [94m129[0m in [92mexec_func_with_error_handling[0m                                                 [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/streamlit/runtime/scriptrunner/[0m[1;33mscript_runner[0m [31m [0m
-[31m [0m [1;33m.py[0m:[94m672[0m in [92mcode_to_exec[0m                                                              [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m [2;33m/content/[0m[1;33mapp.py[0m:[94m339[0m in [92m<module>[0m                                                      [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m   [2m336 [0m                                                                               [31m [0m
-[31m [0m   [2m337 [0m                                                                               [31m [0m
-[31m [0m   [2m338 [0m[2m# # --------------------------------------------------------------------------[0m [31m [0m
-[31m [0m [31m❱ [0m339 [2m# # [0m[1;2;4m Helpe[0m[2mrs[0m                                                                   [31m [0m
-[31m [0m   [2m340 [0m[2m# # --------------------------------------------------------------------------[0m [31m [0m
-[31m [0m   [2m341 [0m[2m# def refresh_docs() -> str:[0m                                                   [31m [0m
-[31m [0m   [2m342 [0m[2m#     """Run the extractor and return the Markdown content."""[0m                 [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m [2;33m/content/[0m[1;33mapp.py[0m:[94m307[0m in [92mmain[0m                                                          [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m   [2m304 [0m[2;33m│   │   [0m[33mwindow.top.onbeforeunload = function (e) [0m[33m{{[0m                            [31m [0m
-[31m [0m   [2m305 [0m[2;33m│   │   │   [0m[33mif (!window.top.hasPushed) [0m[33m{{[0m                                      [31m [0m
-[31m [0m   [2m306 [0m[2;33m│   │   │   │   [0m[33me.preventDefault(); e.returnValue = [0m[33m'[0m[33m'[0m[33m;[0m                        [31m [0m
-[31m [0m [31m❱ [0m307 [2;33m│   │   │   [0m[1;2;4;33m│   [0m[1;4;33mreturn [0m[1;4;33m'[0m[1;4;33mYou have not pus[0m[33mhed to GitHub yet.[0m[33m\\[0m[33mnDo you really wan[0m [31m [0m
-[31m [0m   [2m308 [0m[2;33m│   │   │   [0m[33m}}[0m                                                                 [31m [0m
-[31m [0m   [2m309 [0m[2;33m│   │   [0m[33m}}[0m[33m;[0m                                                                    [31m [0m
-[31m [0m   [2m310 [0m[2;33m│   │   [0m[33m</script>[0m                                                              [31m [0m
-[31m────────────────────────────────────────────────────────────────────────────────────────[0m
-[1;91mIndexError: [0mlist assignment index out of range
-[31m──[0m[31m────────────────────────[0m[31m [0m[1;31mTraceback [0m[1;2;31m(most recent call last)[0m[31m [0m[31m─────────────────────────[0m[31m──[0m
-[31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/streamlit/runtime/scriptrunner/[0m[1;33mexec_code.py[0m: [31m [0m
-[31m [0m [94m129[0m in [92mexec_func_with_error_handling[0m                                                 [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/streamlit/runtime/scriptrunner/[0m[1;33mscript_runner[0m [31m [0m
-[31m [0m [1;33m.py[0m:[94m672[0m in [92mcode_to_exec[0m                                                              [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m [2;33m/content/[0m[1;33mapp.py[0m:[94m339[0m in [92m<module>[0m                                                      [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m   [2m336 [0m                                                                               [31m [0m
-[31m [0m   [2m337 [0m                                                                               [31m [0m
-[31m [0m   [2m338 [0m[94mif[0m [91m__name__[0m == [33m"[0m[33m__main__[0m[33m"[0m:                                                     [31m [0m
-[31m [0m [31m❱ [0m339 [2m│   [0m[1;4mmain()[0m                                                                     [31m [0m
-[31m [0m   [2m340 [0m                                                                               [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m [2;33m/content/[0m[1;33mapp.py[0m:[94m307[0m in [92mmain[0m                                                          [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m   [2m304 [0m[2m│   │   │   │   [0mclient, msgs, tools, placeholder, tool_calls                   [31m [0m
-[31m [0m   [2m305 [0m[2m│   │   │   [0m)                                                                  [31m [0m
-[31m [0m   [2m306 [0m[2m│   │   │   [0m[2m# Update history with the *full* assistant text[0m                    [31m [0m
-[31m [0m [31m❱ [0m307 [2m│   │   │   [0m[1;4mst.session_state.history[-[0m[1;4;94m1[0m[1;4m][0m = (user_input, full_text)             [31m [0m
-[31m [0m   [2m308 [0m[2m│   │   │   [0m[2m# Process any nested calls that might have been triggered by a too[0m [31m [0m
-[31m [0m   [2m309 [0m[2m│   │   │   [0m[94mwhile[0m remaining_calls:                                             [31m [0m
-[31m [0m   [2m310 [0m[2m│   │   │   │   [0mfull_text, remaining_calls = process_tool_calls(               [31m [0m
-[31m────────────────────────────────────────────────────────────────────────────────────────[0m
-[1;91mIndexError: [0mlist assignment index out of range
+[1;91mSyntaxError: [0munterminated triple-quoted string literal [1m([0mdetected at line [1;36m204[0m[1m)[0m
