@@ -152,13 +152,13 @@ def process_tool_calls(
         by the tool calls.
     """
     if not tool_calls:
-        return "", None
+        return ""
 
     # Accumulate all text that the assistant will eventually produce
     full_text = ""
 
     # We keep looping until the model stops asking for tools
-    while tool_calls:
+    while tool_calls and not finished:
         
         for tc in tool_calls:
             

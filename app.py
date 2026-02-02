@@ -134,11 +134,11 @@ def main() -> None:
 
         with st.chat_message("assistant"):
             placeholder = st.empty()
-            assistant_text, tool_calls = stream_and_collect(client, msgs, tools, placeholder)
+            assistant_text, tool_calls, finished = stream_and_collect(client, msgs, tools, placeholder)
 
         full_text = assistant_text
-        if tool_calls:
-            full_text = process_tool_calls(client, msgs, tools, placeholder, tool_calls)
+        if tool_calls and not finished:
+            full_text = process_tool_calls(client, msgs, tools, placeholder, tool_calls, finished)
         else: 
             full_text = assistant_text
                 
