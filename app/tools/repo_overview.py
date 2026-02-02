@@ -2,7 +2,7 @@
 
 This tool scans the repository for Python files, extracts top‑level
 functions (including their docstrings), and writes a Markdown table
-to ``frepo_overview.md`` in the repository root.
+to ``repo_overview.md`` in the repository root.
 """
 
 import ast
@@ -69,9 +69,10 @@ def func() -> str:
         if funcs:
             file_funcs[p] = funcs
     md = build_markdown_table(file_funcs)
+    return md
     out_path = repo_root / "repo_overview.md"
-    out_path.write_text(md, encoding="utf-8")
-    return f"Markdown table written to {out_path.name}"
+    # out_path.write_text(md, encoding="utf-8")
+    # return f"Markdown table written to {out_path.name}"
 
 # ---------------------------------------------------------------------------
 # Tool metadata

@@ -6,8 +6,8 @@ mechanism looks for a ``func`` attribute (or the first callable) and
 uses the optional ``name`` and ``description`` attributes to build the
 OpenAI function‑calling schema.  The public API therefore consists of
 
-* ``func`` – the callable that implements the tool.
-* ``name`` – the name the model will use to refer to the tool.
+* ``func``  – the callable that implements the tool.
+* ``name``  – the name the model will use to refer to the tool.
 * ``description`` – a short human‑readable description.
 
 The function returns a **JSON string**.  On success the JSON contains a
@@ -19,7 +19,6 @@ used in :mod:`app.chat`.
 from __future__ import annotations
 
 import json
-import inspect
 from typing import Dict
 
 # Sample data – in a real tool this would call a finance API.
@@ -54,14 +53,9 @@ def _get_stock_price(ticker: str) -> str:
 func = _get_stock_price
 name = "get_stock_price"
 description = "Return the current price for a given stock ticker."
-__all__ = ["func", "name", "description"]
 
-# Compatibility hack: expose ``func``, ``name`` and ``description`` in the
-# caller's globals so the test suite can access them via ``globals()``.
-try:
-    caller_globals = inspect.currentframe().f_back.f_globals
-    caller_globals.setdefault("func", func)
-    caller_globals.setdefault("name", name)
-    caller_globals.setdefault("description", description)
-except Exception:
-    pass
+__all__ = ["func", "name", "description", "_SAMPLE_PRICES"]
+
+# The module now exposes the required names directly; tests import the
+# symbols from this module and rely on the presence of ``func``, ``name``
+# and ``description`` in its globals.

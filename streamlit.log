@@ -15,17 +15,92 @@ Collecting usage statistics. To deactivate, set browser.gatherUsageStats to fals
 [31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/streamlit/runtime/scriptrunner/[0m[1;33mscript_runner[0m [31m [0m
 [31m [0m [1;33m.py[0m:[94m672[0m in [92mcode_to_exec[0m                                                              [31m [0m
 [31m [0m                                                                                      [31m [0m
-[31m [0m [2;33m/content/[0m[1;33mapp.py[0m:[94m36[0m in [92m<module>[0m                                                       [31m [0m
+[31m [0m [2;33m/content/[0m[1;33mapp.py[0m:[94m156[0m in [92m<module>[0m                                                      [31m [0m
 [31m [0m                                                                                      [31m [0m
-[31m [0m   [2m 33 [0m[2;90m│   [0m[33m"""Return True iff the local HEAD matches origin/main and the working tree[0m [31m [0m
-[31m [0m   [2m 34 [0m[2;33m│   [0m[33mhas no dirty files."""[0m                                                     [31m [0m
-[31m [0m   [2m 35 [0m[2m│   [0m[94mtry[0m:                                                                       [31m [0m
-[31m [0m [31m❱ [0m 36 [1;2;4m│   │   [0m[1;4mrepo = Repo(repo_path)[0m                                                 [31m [0m
-[31m [0m   [2m 37 [0m[2m│   [0m[94mexcept[0m InvalidGitRepositoryError:                                          [31m [0m
-[31m [0m   [2m 38 [0m[2m│   │   [0m[94mreturn[0m [94mFalse[0m                                                           [31m [0m
-[31m [0m   [2m 39 [0m                                                                               [31m [0m
+[31m [0m   [2m153 [0m[2m│   │   [0mplaceholder.markdown(full_text, unsafe_allow_html=[94mTrue[0m)                [31m [0m
+[31m [0m   [2m154 [0m[2m│   │   [0m                                                                       [31m [0m
+[31m [0m   [2m155 [0m[2m│   │   [0m[2m# Persist the conversation history (assistant includes tool output)[0m    [31m [0m
+[31m [0m [31m❱ [0m156 [2m│   [0m[1;2;4m│   [0m[1;4mhi[0mstory.append((user_input, full_text))                                [31m [0m
+[31m [0m   [2m157 [0m[2m│   │   [0mlog_message(session_id, [33m"[0m[33massistant[0m[33m"[0m, full_text)                        [31m [0m
+[31m [0m   [2m158 [0m[2m│   │   [0mst.session_state.history = history                                     [31m [0m
+[31m [0m   [2m159 [0m                                                                               [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2;33m/content/[0m[1;33mapp.py[0m:[94m140[0m in [92mmain[0m                                                          [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m137 [0m[2m│   │   │   [0massistant_text, tool_calls = stream_and_collect(client, msgs, tool [31m [0m
+[31m [0m   [2m138 [0m[2m│   │   │   [0m[2m# The streamed text is already shown; we will overwrite later if t[0m [31m [0m
+[31m [0m   [2m139 [0m[2m│   │   [0m                                                                       [31m [0m
+[31m [0m [31m❱ [0m140 [2m│   │   [0mlog_message(session_id, [33m"[0m[33massistan[0m[1;4;33mt[0m[1;4;33m"[0m[1;4m, assistant_text)[0m                   [31m [0m
+[31m [0m   [2m141 [0m[2m│   │   [0m                                                                       [31m [0m
+[31m [0m   [2m142 [0m[2m│   │   [0mfull_text = assistant_text                                             [31m [0m
+[31m [0m   [2m143 [0m[2m│   │   [0m[94mif[0m tool_calls:                                                         [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2;33m/content/app/[0m[1;33mchat.py[0m:[94m210[0m in [92mprocess_tool_calls[0m                                       [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m207 [0m[2m│   │   │   [0mfull_text += result                                                [31m [0m
+[31m [0m   [2m208 [0m[2m│   │   [0m                                                                       [31m [0m
+[31m [0m   [2m209 [0m[2m│   │   [0mnew_placeholder = st.empty()                                           [31m [0m
+[31m [0m [31m❱ [0m210 [2m│   │   [0mnew_text, new_tool_calls = [1;4mstream_and_collect([0m                         [31m [0m
+[31m [0m   [2m211 [0m[1;2;4m│   │   │   [0m[1;4mclient, messages, tools, new_placeholder[0m                           [31m [0m
+[31m [0m   [2m212 [0m[1;2;4m│   │   [0m[1;4m)[0m                                                                      [31m [0m
+[31m [0m   [2m213 [0m[2m│   │   [0mfull_text += new_text                                                  [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2;33m/content/app/[0m[1;33mchat.py[0m:[94m78[0m in [92mstream_and_collect[0m                                        [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m 75 [0m[2;33m│   [0m[33massistant text and a list of tool calls (or ``None`` if no tool call[0m       [31m [0m
+[31m [0m   [2m 76 [0m[2;33m│   [0m[33mwas emitted).[0m                                                              [31m [0m
+[31m [0m   [2m 77 [0m[2;33m│   [0m[33m"""[0m                                                                        [31m [0m
+[31m [0m [31m❱ [0m 78 [2m│   [0mstream = client.chat.completions.create(                                   [31m [0m
+[31m [0m   [2m 79 [0m[2m│   │   [0mmodel=MODEL_NAME,                                                      [31m [0m
+[31m [0m   [2m 80 [0m[2m│   │   [0mmessages=messages,                                                     [31m [0m
+[31m [0m   [2m 81 [0m[2m│   │   [0mstream=[94mTrue[0m,                                                           [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/openai/_utils/[0m[1;33m_utils.py[0m:[94m286[0m in [92mwrapper[0m       [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m283 [0m[2m│   │   │   │   │   [0m[94melse[0m:                                                      [31m [0m
+[31m [0m   [2m284 [0m[2m│   │   │   │   │   │   [0mmsg = [33mf[0m[33m"[0m[33mMissing required argument: [0m[33m{[0mquote(missing[[94m0[0m])[33m}[0m [31m [0m
+[31m [0m   [2m285 [0m[2m│   │   │   │   [0m[94mraise[0m [96mTypeError[0m(msg)                                           [31m [0m
+[31m [0m [31m❱ [0m286 [2m│   │   │   [0m[94mreturn[0m [1;4mfunc(*args, **kwargs)[0m                                       [31m [0m
+[31m [0m   [2m287 [0m[2m│   │   [0m                                                                       [31m [0m
+[31m [0m   [2m288 [0m[2m│   │   [0m[94mreturn[0m wrapper  [2m# type: ignore[0m                                         [31m [0m
+[31m [0m   [2m289 [0m                                                                               [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/openai/resources/chat/completions/[0m[1;33mcompletion[0m [31m [0m
+[31m [0m [1;33ms.py[0m:[94m1192[0m in [92mcreate[0m                                                                  [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m1189 [0m[2m│   │   [0mtimeout: [96mfloat[0m | httpx.Timeout | [94mNone[0m | NotGiven = not_given,         [31m [0m
+[31m [0m   [2m1190 [0m[2m│   [0m) -> ChatCompletion | Stream[ChatCompletionChunk]:                        [31m [0m
+[31m [0m   [2m1191 [0m[2m│   │   [0mvalidate_response_format(response_format)                             [31m [0m
+[31m [0m [31m❱ [0m1192 [2m│   │   [0m[94mreturn[0m [96mself[0m._post(                                                    [31m [0m
+[31m [0m   [2m1193 [0m[2m│   │   │   [0m[33m"[0m[33m/chat/completions[0m[33m"[0m,                                              [31m [0m
+[31m [0m   [2m1194 [0m[2m│   │   │   [0mbody=maybe_transform(                                             [31m [0m
+[31m [0m   [2m1195 [0m[2m│   │   │   │   [0m{                                                             [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/openai/[0m[1;33m_base_client.py[0m:[94m1294[0m in [92mpost[0m          [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m1291 [0m[2m│   │   [0mopts = FinalRequestOptions.construct(                                 [31m [0m
+[31m [0m   [2m1292 [0m[2m│   │   │   [0mmethod=[33m"[0m[33mpost[0m[33m"[0m, url=path, json_data=body, content=content, files=t [31m [0m
+[31m [0m   [2m1293 [0m[2m│   │   [0m)                                                                     [31m [0m
+[31m [0m [31m❱ [0m1294 [2m│   │   [0m[94mreturn[0m cast(ResponseT, [1;4;96mself[0m[1;4m.request(cast_to, opts, stream=stream, str[0m [31m [0m
+[31m [0m   [2m1295 [0m[2m│   [0m                                                                          [31m [0m
+[31m [0m   [2m1296 [0m[2m│   [0m[94mdef[0m[90m [0m[92mpatch[0m(                                                                [31m [0m
+[31m [0m   [2m1297 [0m[2m│   │   [0m[96mself[0m,                                                                 [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/openai/[0m[1;33m_base_client.py[0m:[94m1067[0m in [92mrequest[0m       [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m1064 [0m[2m│   │   │   │   │   [0merr.response.read()                                       [31m [0m
+[31m [0m   [2m1065 [0m[2m│   │   │   │   [0m                                                              [31m [0m
+[31m [0m   [2m1066 [0m[2m│   │   │   │   [0mlog.debug([33m"[0m[33mRe-raising status error[0m[33m"[0m)                          [31m [0m
+[31m [0m [31m❱ [0m1067 [2m│   │   │   │   [0m[1;4;94mraise[0m[1;4m [0m[1;4;96mself[0m[1;4m._make_status_error_from_response(err.response) [0m[1;4;94mfro[0m [31m [0m
+[31m [0m   [2m1068 [0m[2m│   │   │   [0m                                                                  [31m [0m
+[31m [0m   [2m1069 [0m[2m│   │   │   [0m[94mbreak[0m                                                             [31m [0m
+[31m [0m   [2m1070 [0m                                                                              [31m [0m
 [31m────────────────────────────────────────────────────────────────────────────────────────[0m
-[1;91mImportError: [0mattempted relative import with no known parent package
+[1;91mInternalServerError: [0mError code: [1;36m500[0m - [1m{[0m[32m'error'[0m: [1m{[0m[32m'code'[0m: [1;36m500[0m, [32m'message'[0m: 
+[32m'\n------------\nWhile executing CallExpression at line 328, column 32 in source:\n... [0m
+[32mnone %[0m[32m}[0m[32m↵            [0m[32m{[0m[32m{[0m[32m- raise_exception[0m[32m([0m[32m"Message has tool role, but there was n...\n    [0m
+[32m^\nError: Jinja Exception: Message has tool role, but there was no previous assistant [0m
+[32mmessage with a tool call!'[0m, [32m'type'[0m: [32m'server_error'[0m[1m}[0m[1m}[0m
 [31m──[0m[31m────────────────────────[0m[31m [0m[1;31mTraceback [0m[1;2;31m(most recent call last)[0m[31m [0m[31m─────────────────────────[0m[31m──[0m
 [31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/streamlit/runtime/scriptrunner/[0m[1;33mexec_code.py[0m: [31m [0m
 [31m [0m [94m129[0m in [92mexec_func_with_error_handling[0m                                                 [31m [0m
@@ -33,50 +108,87 @@ Collecting usage statistics. To deactivate, set browser.gatherUsageStats to fals
 [31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/streamlit/runtime/scriptrunner/[0m[1;33mscript_runner[0m [31m [0m
 [31m [0m [1;33m.py[0m:[94m672[0m in [92mcode_to_exec[0m                                                              [31m [0m
 [31m [0m                                                                                      [31m [0m
-[31m [0m [2;33m/content/[0m[1;33mapp.py[0m:[94m216[0m in [92m<module>[0m                                                      [31m [0m
+[31m [0m [2;33m/content/[0m[1;33mapp.py[0m:[94m156[0m in [92m<module>[0m                                                      [31m [0m
 [31m [0m                                                                                      [31m [0m
-[31m [0m   [2m213 [0m                                                                               [31m [0m
-[31m [0m   [2m214 [0m                                                                               [31m [0m
-[31m [0m   [2m215 [0m[94mif[0m [91m__name__[0m == [33m"[0m[33m__main__[0m[33m"[0m:                                                     [31m [0m
-[31m [0m [31m❱ [0m216 [2m│   [0m[1;4mmain()[0m                                                                     [31m [0m
-[31m [0m   [2m217 [0m                                                                               [31m [0m
-[31m [0m   [2m218 [0m                                                                               [31m [0m
+[31m [0m   [2m153 [0m[2m│   [0m)                                                                          [31m [0m
+[31m [0m   [2m154 [0m                                                                               [31m [0m
+[31m [0m   [2m155 [0m[94mif[0m [91m__name__[0m == [33m"[0m[33m__main__[0m[33m"[0m:                                                     [31m [0m
+[31m [0m [31m❱ [0m156 [2m│   [0m[1;4mmain()[0m                                                                     [31m [0m
+[31m [0m   [2m157 [0m                                                                               [31m [0m
 [31m [0m                                                                                      [31m [0m
-[31m [0m [2;33m/content/[0m[1;33mapp.py[0m:[94m143[0m in [92mmain[0m                                                          [31m [0m
+[31m [0m [2;33m/content/[0m[1;33mapp.py[0m:[94m140[0m in [92mmain[0m                                                          [31m [0m
 [31m [0m                                                                                      [31m [0m
-[31m [0m   [2m140 [0m[2m│   │   [0mselected = st.selectbox([33m"[0m[33mOpen a conversation[0m[33m"[0m, session_options)        [31m [0m
-[31m [0m   [2m141 [0m[2m│   │   [0m[94mif[0m selected != [33m"[0m[33mnew[0m[33m"[0m:                                                  [31m [0m
-[31m [0m   [2m142 [0m[2m│   │   │   [0mst.session_state[[33m"[0m[33msession_id[0m[33m"[0m] = selected                          [31m [0m
-[31m [0m [31m❱ [0m143 [2m│   │   │   [0m[1;4mst.experimental_rerun[0m()                                            [31m [0m
-[31m [0m   [2m144 [0m[2m│   │   [0m                                                                       [31m [0m
-[31m [0m   [2m145 [0m[2m│   │   [0m[2m# 6️⃣  List available tools[0m                                              [31m [0m
-[31m [0m   [2m146 [0m[2m│   │   [0mst.subheader([33m"[0m[33mAvailable tools[0m[33m"[0m)                                        [31m [0m
+[31m [0m   [2m137 [0m[2m│   │   [0m                                                                       [31m [0m
+[31m [0m   [2m138 [0m[2m│   │   [0mfull_text = assistant_text                                             [31m [0m
+[31m [0m   [2m139 [0m[2m│   │   [0m[94mif[0m tool_calls:                                                         [31m [0m
+[31m [0m [31m❱ [0m140 [2m│   │   │   [0mtool_text, remaining_calls = [1;4mprocess_tool_calls(client, msgs, tool[0m [31m [0m
+[31m [0m   [2m141 [0m[2m│   │   │   [0mfull_text += tool_text                                             [31m [0m
+[31m [0m   [2m142 [0m[2m│   │   │   [0m[94mwhile[0m remaining_calls:                                             [31m [0m
+[31m [0m   [2m143 [0m[2m│   │   │   │   [0mtool_text, remaining_calls = process_tool_calls(client, msgs,  [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2;33m/content/app/[0m[1;33mchat.py[0m:[94m210[0m in [92mprocess_tool_calls[0m                                       [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m207 [0m[2m│   │   │   [0mfull_text += result                                                [31m [0m
+[31m [0m   [2m208 [0m[2m│   │   [0m                                                                       [31m [0m
+[31m [0m   [2m209 [0m[2m│   │   [0mnew_placeholder = st.empty()                                           [31m [0m
+[31m [0m [31m❱ [0m210 [2m│   │   [0mnew_text, new_tool_calls = [1;4mstream_and_collect([0m                         [31m [0m
+[31m [0m   [2m211 [0m[1;2;4m│   │   │   [0m[1;4mclient, messages, tools, new_placeholder[0m                           [31m [0m
+[31m [0m   [2m212 [0m[1;2;4m│   │   [0m[1;4m)[0m                                                                      [31m [0m
+[31m [0m   [2m213 [0m[2m│   │   [0mfull_text += new_text                                                  [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2;33m/content/app/[0m[1;33mchat.py[0m:[94m78[0m in [92mstream_and_collect[0m                                        [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m 75 [0m[2;33m│   [0m[33massistant text and a list of tool calls (or ``None`` if no tool call[0m       [31m [0m
+[31m [0m   [2m 76 [0m[2;33m│   [0m[33mwas emitted).[0m                                                              [31m [0m
+[31m [0m   [2m 77 [0m[2;33m│   [0m[33m"""[0m                                                                        [31m [0m
+[31m [0m [31m❱ [0m 78 [2m│   [0mstream = client.chat.completions.create(                                   [31m [0m
+[31m [0m   [2m 79 [0m[2m│   │   [0mmodel=MODEL_NAME,                                                      [31m [0m
+[31m [0m   [2m 80 [0m[2m│   │   [0mmessages=messages,                                                     [31m [0m
+[31m [0m   [2m 81 [0m[2m│   │   [0mstream=[94mTrue[0m,                                                           [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/openai/_utils/[0m[1;33m_utils.py[0m:[94m286[0m in [92mwrapper[0m       [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m283 [0m[2m│   │   │   │   │   [0m[94melse[0m:                                                      [31m [0m
+[31m [0m   [2m284 [0m[2m│   │   │   │   │   │   [0mmsg = [33mf[0m[33m"[0m[33mMissing required argument: [0m[33m{[0mquote(missing[[94m0[0m])[33m}[0m [31m [0m
+[31m [0m   [2m285 [0m[2m│   │   │   │   [0m[94mraise[0m [96mTypeError[0m(msg)                                           [31m [0m
+[31m [0m [31m❱ [0m286 [2m│   │   │   [0m[94mreturn[0m [1;4mfunc(*args, **kwargs)[0m                                       [31m [0m
+[31m [0m   [2m287 [0m[2m│   │   [0m                                                                       [31m [0m
+[31m [0m   [2m288 [0m[2m│   │   [0m[94mreturn[0m wrapper  [2m# type: ignore[0m                                         [31m [0m
+[31m [0m   [2m289 [0m                                                                               [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/openai/resources/chat/completions/[0m[1;33mcompletion[0m [31m [0m
+[31m [0m [1;33ms.py[0m:[94m1192[0m in [92mcreate[0m                                                                  [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m1189 [0m[2m│   │   [0mtimeout: [96mfloat[0m | httpx.Timeout | [94mNone[0m | NotGiven = not_given,         [31m [0m
+[31m [0m   [2m1190 [0m[2m│   [0m) -> ChatCompletion | Stream[ChatCompletionChunk]:                        [31m [0m
+[31m [0m   [2m1191 [0m[2m│   │   [0mvalidate_response_format(response_format)                             [31m [0m
+[31m [0m [31m❱ [0m1192 [2m│   │   [0m[94mreturn[0m [96mself[0m._post(                                                    [31m [0m
+[31m [0m   [2m1193 [0m[2m│   │   │   [0m[33m"[0m[33m/chat/completions[0m[33m"[0m,                                              [31m [0m
+[31m [0m   [2m1194 [0m[2m│   │   │   [0mbody=maybe_transform(                                             [31m [0m
+[31m [0m   [2m1195 [0m[2m│   │   │   │   [0m{                                                             [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/openai/[0m[1;33m_base_client.py[0m:[94m1294[0m in [92mpost[0m          [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m1291 [0m[2m│   │   [0mopts = FinalRequestOptions.construct(                                 [31m [0m
+[31m [0m   [2m1292 [0m[2m│   │   │   [0mmethod=[33m"[0m[33mpost[0m[33m"[0m, url=path, json_data=body, content=content, files=t [31m [0m
+[31m [0m   [2m1293 [0m[2m│   │   [0m)                                                                     [31m [0m
+[31m [0m [31m❱ [0m1294 [2m│   │   [0m[94mreturn[0m cast(ResponseT, [1;4;96mself[0m[1;4m.request(cast_to, opts, stream=stream, str[0m [31m [0m
+[31m [0m   [2m1295 [0m[2m│   [0m                                                                          [31m [0m
+[31m [0m   [2m1296 [0m[2m│   [0m[94mdef[0m[90m [0m[92mpatch[0m(                                                                [31m [0m
+[31m [0m   [2m1297 [0m[2m│   │   [0m[96mself[0m,                                                                 [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/openai/[0m[1;33m_base_client.py[0m:[94m1067[0m in [92mrequest[0m       [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m1064 [0m[2m│   │   │   │   │   [0merr.response.read()                                       [31m [0m
+[31m [0m   [2m1065 [0m[2m│   │   │   │   [0m                                                              [31m [0m
+[31m [0m   [2m1066 [0m[2m│   │   │   │   [0mlog.debug([33m"[0m[33mRe-raising status error[0m[33m"[0m)                          [31m [0m
+[31m [0m [31m❱ [0m1067 [2m│   │   │   │   [0m[1;4;94mraise[0m[1;4m [0m[1;4;96mself[0m[1;4m._make_status_error_from_response(err.response) [0m[1;4;94mfro[0m [31m [0m
+[31m [0m   [2m1068 [0m[2m│   │   │   [0m                                                                  [31m [0m
+[31m [0m   [2m1069 [0m[2m│   │   │   [0m[94mbreak[0m                                                             [31m [0m
+[31m [0m   [2m1070 [0m                                                                              [31m [0m
 [31m────────────────────────────────────────────────────────────────────────────────────────[0m
-[1;91mAttributeError: [0mmodule [32m'streamlit'[0m has no attribute [32m'experimental_rerun'[0m
-[31m──[0m[31m────────────────────────[0m[31m [0m[1;31mTraceback [0m[1;2;31m(most recent call last)[0m[31m [0m[31m─────────────────────────[0m[31m──[0m
-[31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/streamlit/runtime/scriptrunner/[0m[1;33mexec_code.py[0m: [31m [0m
-[31m [0m [94m129[0m in [92mexec_func_with_error_handling[0m                                                 [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m [2;33m/usr/local/lib/python3.12/dist-packages/streamlit/runtime/scriptrunner/[0m[1;33mscript_runner[0m [31m [0m
-[31m [0m [1;33m.py[0m:[94m672[0m in [92mcode_to_exec[0m                                                              [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m [2;33m/content/[0m[1;33mapp.py[0m:[94m216[0m in [92m<module>[0m                                                      [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m   [2m213 [0m                                                                               [31m [0m
-[31m [0m   [2m214 [0m                                                                               [31m [0m
-[31m [0m   [2m215 [0m[94mif[0m [91m__name__[0m == [33m"[0m[33m__main__[0m[33m"[0m:                                                     [31m [0m
-[31m [0m [31m❱ [0m216 [2m│   [0m[1;4mmain()[0m                                                                     [31m [0m
-[31m [0m   [2m217 [0m                                                                               [31m [0m
-[31m [0m   [2m218 [0m                                                                               [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m [2;33m/content/[0m[1;33mapp.py[0m:[94m143[0m in [92mmain[0m                                                          [31m [0m
-[31m [0m                                                                                      [31m [0m
-[31m [0m   [2m140 [0m[2m│   │   [0mselected = st.selectbox([33m"[0m[33mOpen a conversation[0m[33m"[0m, session_options)        [31m [0m
-[31m [0m   [2m141 [0m[2m│   │   [0m[94mif[0m selected != [33m"[0m[33mnew[0m[33m"[0m:                                                  [31m [0m
-[31m [0m   [2m142 [0m[2m│   │   │   [0mst.session_state[[33m"[0m[33msession_id[0m[33m"[0m] = selected                          [31m [0m
-[31m [0m [31m❱ [0m143 [2m│   │   │   [0m[1;4mst.experimental_rerun[0m()                                            [31m [0m
-[31m [0m   [2m144 [0m[2m│   │   [0m                                                                       [31m [0m
-[31m [0m   [2m145 [0m[2m│   │   [0m[2m# 6️⃣  List available tools[0m                                              [31m [0m
-[31m [0m   [2m146 [0m[2m│   │   [0mst.subheader([33m"[0m[33mAvailable tools[0m[33m"[0m)                                        [31m [0m
-[31m────────────────────────────────────────────────────────────────────────────────────────[0m
-[1;91mAttributeError: [0mmodule [32m'streamlit'[0m has no attribute [32m'experimental_rerun'[0m
+[1;91mInternalServerError: [0mError code: [1;36m500[0m - [1m{[0m[32m'error'[0m: [1m{[0m[32m'code'[0m: [1;36m500[0m, [32m'message'[0m: 
+[32m'\n------------\nWhile executing CallExpression at line 328, column 32 in source:\n... [0m
+[32mnone %[0m[32m}[0m[32m↵            [0m[32m{[0m[32m{[0m[32m- raise_exception[0m[32m([0m[32m"Message has tool role, but there was n...\n    [0m
+[32m^\nError: Jinja Exception: Message has tool role, but there was no previous assistant [0m
+[32mmessage with a tool call!'[0m, [32m'type'[0m: [32m'server_error'[0m[1m}[0m[1m}[0m

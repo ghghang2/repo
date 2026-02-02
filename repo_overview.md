@@ -17,22 +17,21 @@
 | app/remote.py | _remote_url | HTTPS URL that contains the PAT – used only for git push. |
 | app/tools/__init__.py | _generate_schema |  |
 | app/tools/__init__.py | get_tools | Return the list of tools formatted for chat.completions.create. |
-| app/tools/apply_patch.py | _apply_patch | Apply *patch_text* to the file or directory specified by *path*.  Parameters ---------- path:     File or directory path relative to the repository root. patch_text:     Unified diff string.  Returns ------- str     JSON string with either ``result`` or ``error``. |
 | app/tools/create_file.py | _safe_resolve | Resolve ``rel_path`` against ``repo_root`` and ensure the result does **not** escape the repository root (prevents directory traversal). |
 | app/tools/create_file.py | _create_file | Create a new file at ``path`` (relative to the repository root) with the supplied ``content``.  Parameters ---------- path     File path relative to the repo root.  ``path`` may contain     directory separators but **must not** escape the root. content     Raw text to write into the file.  Returns ------- str     JSON string.  On success:      .. code-block:: json          { "result": "File created: <path>" }      On failure:      .. code-block:: json          { "error": "<exception message>" } |
-| app/tools/generate_table.py | walk_python_files |  |
-| app/tools/generate_table.py | extract_functions_from_file | Return a list of (function_name, docstring) for top‑level functions.  Functions defined inside classes or other functions are ignored. |
-| app/tools/generate_table.py | build_markdown_table |  |
-| app/tools/generate_table.py | func | Generate a markdown table of all Python functions in the repo.  The table is written to ``function_table.md`` in the repository root. |
 | app/tools/get_stock_price.py | _get_stock_price | Return the current stock price for *ticker* as a JSON string.  Parameters ---------- ticker: str     Stock symbol (e.g. ``"AAPL"``).  Case‑insensitive.  Returns ------- str     JSON string with ``ticker`` and ``price`` keys.  If the ticker     is unknown, ``price`` is set to ``"unknown"``. |
 | app/tools/get_weather.py | _get_weather | Return a short weather description for *city*.  Parameters ---------- city : str     The name of the city to query (e.g. "Taipei").  Returns ------- str     JSON string. On success:          {"city":"Taipei","weather":"☀️  +61°F"}      On error:          {"error":"<error message>"} |
+| app/tools/repo_overview.py | walk_python_files |  |
+| app/tools/repo_overview.py | extract_functions_from_file | Return a list of (function_name, docstring) for top‑level functions.  Functions defined inside classes or other functions are ignored. |
+| app/tools/repo_overview.py | build_markdown_table |  |
+| app/tools/repo_overview.py | func | Generate a markdown table of all Python functions in the repo.  The table is written to ``repo_overview.md`` in the repository root. |
 | app/tools/run_command.py | _safe_resolve | Resolve ``rel_path`` against ``repo_root`` and ensure the result does **not** escape the repository root (prevents directory traversal). |
 | app/tools/run_command.py | _run_command | Execute ``command`` in the repository root (or a sub‑directory if ``cwd`` is provided) and return a JSON string with:     * ``stdout``     * ``stderr``     * ``exit_code`` Any exception is converted to an error JSON. |
 | app/tools/run_tests.py | _run_tests | Execute `pytest -q` in the repository root and return JSON. |
 | app/utils.py | build_api_messages | Convert local chat history into the format expected by the OpenAI API, optionally adding a tool list. |
 | app/utils.py | stream_response | Yield the cumulative assistant reply while streaming. Also returns any tool call(s) that the model requested. |
 | app.py | refresh_docs | Run the repository extractor and return its Markdown output. |
-| app.py | is_repo_up_to_date | Return ``True`` if the local HEAD equals ``origin/main`` and the working tree is clean. |
+| app.py | is_repo_up_to_date |  |
 | app.py | main |  |
 | run.py | _run | Convenience wrapper around subprocess.run. |
 | run.py | _is_port_free | Return True if the port is not currently bound. |
@@ -42,12 +41,7 @@
 | run.py | _load_service_info |  |
 | run.py | status | Print a quick report of the running services. |
 | run.py | stop | Terminate all services and clean up. |
-| tests/test_apply_patch_tool.py | test_apply_patch_tool_success | Test that the apply_patch tool can apply a simple patch.  The test creates a file in the repository root, writes a patch that changes its content, and ensures that the file content is updated. |
-| tests/test_apply_patch_tool.py | test_apply_patch_tool_error | Test that the tool reports an error when git apply fails.  The patch references a non-existent file, which should cause the ``git apply`` command to fail. |
-| tests/test_basic.py | test_basic |  |
 | tests/test_create_file_tool.py | test_create_file_creates_file_with_content | Test that the create_file tool creates a file with the specified content. |
-| tests/test_get_stock_price.py | test_known_ticker |  |
-| tests/test_get_stock_price.py | test_unknown_ticker |  |
 | tests/test_run_command_tool.py | test_run_command_basic | Verify that a simple command returns stdout, stderr and exit code. |
 | tests/test_run_command_tool.py | test_run_command_with_cwd | Verify that the cwd argument correctly changes the working directory. |
 | tests/test_run_command_tool.py | test_run_command_error | Verify that a non-existent command returns a non-zero exit code. |

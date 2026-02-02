@@ -32,7 +32,7 @@ from .tools import TOOLS
 def build_messages(
     history: List[Tuple[str, str]],
     system_prompt: str,
-    repo_docs: Optional[str],
+    # repo_docs: Optional[str],
     user_input: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """Return the list of messages to send to the chat model.
@@ -49,8 +49,8 @@ def build_messages(
         The new user message that will trigger the assistant reply.
     """
     msgs: List[Dict[str, Any]] = [{"role": "system", "content": str(system_prompt)}]
-    if repo_docs:
-        msgs.append({"role": "assistant", "content": str(repo_docs)})
+    # if repo_docs:
+    #     msgs.append({"role": "assistant", "content": str(repo_docs)})
 
     for u, a in history:
         msgs.append({"role": "user", "content": str(u)})
@@ -157,16 +157,16 @@ def process_tool_calls(
 
     # We keep looping until the model stops asking for tools
     while tool_calls:
-        # Process each tool call in the current batch
+        
         for tc in tool_calls:
-            # ---- 1️⃣  Parse arguments safely --------------------------------
+            
             try:
                 args = json.loads(tc.get("arguments") or "{}")
             except Exception as exc:
                 args = {}
                 result = f"❌  JSON error: {exc}"
             else:
-                # ---- 2️⃣  Find the actual Python function --------------------
+                
                 func = next(
                     (t.func for t in TOOLS if t.name == tc.get("name")), None
                 )
@@ -178,24 +178,17 @@ def process_tool_calls(
                         result = f"❌  Tool error: {exc}"
                 else:
                     result = f"⚠️  Unknown tool '{tc.get('name')}'"
-
-            # ---- 3️⃣  Render the tool‑call result ---------------------------
-            # tool_output_str = (
-            #     f"**Tool call**: `{tc.get('name')}`"
-            #     f"({', '.join(f'{k}={v}' for k, v in args.items())}) → `{result[:20]}`"
-            # )
-            # placeholder.markdown(tool_output_str, unsafe_allow_html=True)
+                    
             preview = result[:80] + ("…" if len(result) > 80 else "")
-            placeholder.markdown(
+            full_text += (
                 f"<details>"
                 f"<summary>**{tc.get('name')}**: `{json.dumps(args)}`</summary>"
                 f"\n\n**Result preview**: `{preview}`\n\n"
-                # f"```json\n{result}\n```"
-                f"</details>",
-                unsafe_allow_html=True,
+                f"</details>"
             )
-
-            # ---- 4️⃣  Build messages for the next assistant turn ----------
+            
+            placeholder.markdown(full_text, unsafe_allow_html=True)
+            
             messages.append(
                 {
                     "role": "assistant",
@@ -219,20 +212,15 @@ def process_tool_calls(
                     "content": result,
                 }
             )
-
-            # Append the tool result to the cumulative text
+            
             full_text += result
-
-        # ---- 5️⃣  Ask the model for the next assistant reply -------------
-        # Each round gets a fresh placeholder so the UI shows the new output
-        new_placeholder = st.empty()
+            
+        # new_placeholder = st.empty()
         new_text, new_tool_calls = stream_and_collect(
             client, messages, tools, new_placeholder
         )
         full_text += new_text
-
-        # Prepare for the next iteration
+        
         tool_calls = new_tool_calls or None
-
-    # All tool calls have been handled
+        
     return full_text, None

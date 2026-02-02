@@ -2,14 +2,14 @@
 """
 Application‑wide constants.
 """
-
+from app.tools.repo_overview import func
 # --------------------------------------------------------------------------- #
 #  General settings
 # --------------------------------------------------------------------------- #
 NGROK_URL = "http://localhost:8000"
 
 MODEL_NAME = "unsloth/gpt-oss-20b-GGUF:F16"
-DEFAULT_SYSTEM_PROMPT = "Be concise and accurate at all times. You are empowered with tools and should think carefully to consider if any tool use be helpful with the request."
+DEFAULT_SYSTEM_PROMPT = f'''Be concise and accurate at all times. You are empowered with tools and should think carefully to consider if any tool use be helpful with the request. Tool named apply_patch is not available. Current working directory (cwd) should default to ".".'''
 
 # --------------------------------------------------------------------------- #
 #  GitHub repository details
