@@ -222,5 +222,5 @@ def process_tool_calls(
         full_text += new_text
         
         tool_calls = new_tool_calls or None
-    # placeholder.markdown(full_text, unsafe_allow_html=True)    
+            
     return full_text
