@@ -150,12 +150,13 @@ def main() -> None:
         # msgs = build_messages(history, st.session_state.system_prompt, st.session_state.repo_docs, user_input)
 
         with st.chat_message("assistant"):
-            placeholder = st.empty()
-            assistant_text, tool_calls, finished = stream_and_collect(client, msgs, tools, placeholder)
+            # placeholder = st.empty()
+            assistant_text, tool_calls, finished, reasoning_text = stream_and_collect(client, msgs, tools)
 
         full_text = assistant_text
         if tool_calls and not finished:
-            full_text = process_tool_calls(client, msgs, tools, placeholder, tool_calls, finished, assistant_text)
+            # placeholder = st.empty()
+            full_text = process_tool_calls(client, msgs, tools, tool_calls, finished, assistant_text, reasoning_text)
         else: 
             full_text = assistant_text
                 

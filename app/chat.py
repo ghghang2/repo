@@ -42,8 +42,6 @@ def build_messages(
         List of ``(user, assistant)`` pairs that have already happened.
     system_prompt
         The system message that sets the model behaviour.
-    repo_docs
-        Optional Markdown string that contains the extracted repo source.
     user_input
         The new user message that will trigger the assistant reply.
     """
@@ -63,12 +61,11 @@ def stream_and_collect(
     client: Any,
     messages: List[Dict[str, Any]],
     tools: List[Dict[str, Any]],
-    placeholder: st.delta_generator.delta_generator,
-) -> Tuple[str, Optional[List[Dict[str, Any]]]]:
+) -> Tuple[str, Optional[List[Dict[str, Any]]], bool, str]:
     """Stream the assistant response while capturing tool calls.
 
-    The function writes the incremental assistant content to the supplied
-    Streamlit ``placeholder`` and returns a tuple of the complete
+    The function writes the incremental assistant content to a placeholder
+     and returns a tuple of the complete
     assistant text and a list of tool calls (or ``None`` if no tool call
     was emitted).
     """
@@ -80,8 +77,12 @@ def stream_and_collect(
     )
 
     full_resp = ""
+    reasoning_text = ""
     tool_calls_buffer: Dict[int, Dict[str, Any]] = {}
     finished = False
+    expander = st.expander("Reasoning", expanded=True)
+    reasoning_placeholder = expander.empty()
+    placeholder = st.empty()
 
     for chunk in stream:
         choice = chunk.choices[0]
@@ -89,6 +90,13 @@ def stream_and_collect(
             finished = True
             break
         delta = choice.delta
+
+        reasoning_part = delta.reasoning_content if hasattr(delta, 'reasoning_content') else None
+        if reasoning_part:
+            reasoning_text += reasoning_part
+            reasoning_placeholder.markdown(
+                reasoning_text, unsafe_allow_html=True
+            )
 
         # Regular text
         if delta.content:
@@ -109,17 +117,17 @@ def stream_and_collect(
                     tool_calls_buffer[idx]["arguments"] += tc_delta.function.arguments
 
     final_tool_calls = list(tool_calls_buffer.values()) if tool_calls_buffer else None
-    return full_resp, final_tool_calls, finished
+    return full_resp, final_tool_calls, finished, reasoning_text
 
 
 def process_tool_calls(
     client: Any,
     messages: List[Dict[str, Any]],
     tools: List[Dict[str, Any]],
-    placeholder: st.delta_generator.delta_generator,
     tool_calls: Optional[List[Dict[str, Any]]],
     finished: bool,
     assistant_text: str = "",
+    reasoning_text: str = "",
 ) -> str:
     """
     Execute each tool that the model requested and keep asking the model
@@ -156,7 +164,7 @@ def process_tool_calls(
         return ""
 
     # Accumulate all text that the assistant will eventually produce
-    full_text = assistant_text
+    full_text = assistant_text + reasoning_text
 
     # We keep looping until the model stops asking for tools
     while tool_calls and not finished:
@@ -183,19 +191,20 @@ def process_tool_calls(
                     result = f"⚠️  Unknown tool '{tc.get('name')}'"
                     
             preview = result[:10] + ("…" if len(result) > 10 else "")
-            full_text += (
+            tool_block = (
                 f"<details>"
                 f"<summary>{tc.get('name')}|`{json.dumps(args)}`|{preview}</summary>"
                 f"\n\n`{result}`\n\n"
                 f"</details>"
             )
-            
-            placeholder.markdown(full_text, unsafe_allow_html=True)
+            full_text += tool_block
+            tool_placeholder = st.empty()
+            tool_placeholder.markdown(tool_block, unsafe_allow_html=True)
             
             messages.append(
                 {
                     "role": "assistant",
-                    "content": None,
+                    "content": "",
                     "tool_calls": [
                         {
                             "id": tc.get("id"),
@@ -216,11 +225,8 @@ def process_tool_calls(
                 }
             )
             
-            # full_text += result
-            
-        new_placeholder = st.empty()
-        new_text, new_tool_calls, finished = stream_and_collect(
-            client, messages, tools, new_placeholder
+        new_text, new_tool_calls, finished, reasoning_text = stream_and_collect(
+            client, messages, tools
         )
         full_text += new_text
         
