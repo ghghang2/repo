@@ -1,5 +1,5 @@
 version: 2
-authtoken: 2bVqWSkkOBaer99nOOIQcdrCw5G_77rdMfSwgCm55MWfDZbwJ
+authtoken: 2bVqmhAlU1MtGrij2VggGPeh4qU_75GtVPLcZnMLgNKxy4biF
 tunnels:
   streamlit:
     proto: http

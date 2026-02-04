@@ -105,7 +105,7 @@ def main() -> None:
     # --- 4️⃣  Start llama‑server ------------------------------------------
     LLAMA_LOG_file = LLAMA_LOG.open("w", encoding="utf-8", buffering=1)
     llama_proc = subprocess.Popen(
-        ["./llama-server", "-hf", MODEL, "--port", "8000"],
+        ["./llama-server", "-hf", MODEL, "--port", "8000"],#, "--chat-template-kwargs", '{"reasoning_effort":"high"}'
         stdout=LLAMA_LOG_file,
         stderr=subprocess.STDOUT,
         start_new_session=True,
