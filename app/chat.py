@@ -24,6 +24,17 @@ import streamlit as st
 
 from .config import MODEL_NAME
 from .tools import TOOLS
+import time
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    # handlers=[logging.StreamHandler()],  # writes to stdout (the Streamlit console)
+    filename='chat.log',
+)
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 #  Public helper functions
@@ -174,7 +185,16 @@ def process_tool_calls(
             except Exception as exc:
                 args = {}
                 result = f"❌  JSON error: {exc}"
+                logger.exception("Failed to parse tool arguments", exc_info=True)
             else:
+
+                logger.info(
+                    "Calling tool %s with arguments %s",
+                    tc.get("name"),
+                    json.dumps(args),
+                )
+
+                start = time.time()
                 
                 func = next(
                     (t.func for t in TOOLS if t.name == tc.get("name")), None
@@ -183,8 +203,13 @@ def process_tool_calls(
                 if func:
                     try:
                         result = func(**args)
+                        duration = time.time() - start
+                        logger.info(
+                            "Tool %s finished in %.2fs", tc.get("name"), duration
+                        )
                     except Exception as exc:  # pragma: no cover
                         result = f"❌  Tool error: {exc}"
+                        logger.exception("Tool raised an exception", exc_info=True)
                 else:
                     result = f"⚠️  Unknown tool '{tc.get('name')}'"
                     
