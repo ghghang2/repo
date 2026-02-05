@@ -72,10 +72,19 @@ def apply_diff(input_str: str, diff: str, mode: ApplyDiffMode = "default") -> st
     return _apply_chunks(normalized_input, parsed_chunks, newline=newline)
 
 def _normalize_diff_lines(diff: str) -> list[str]:
-    lines = [line.rstrip("\r") for line in re.split(r"\r?\n", diff)]
-    if lines and lines[-1] == "":
-        lines.pop()
-    return lines
+    """Clean the diff and strip Unified Diff metadata headers."""
+    raw_lines = [line.rstrip("\r") for line in re.split(r"\r?\n", diff)]
+    
+    clean_lines = []
+    for line in raw_lines:
+        # Skip headers that look like Unified Diff metadata
+        if line.startswith(("--- ", "+++ ", "Index: ", "diff --git")):
+            continue
+        clean_lines.append(line)
+        
+    if clean_lines and clean_lines[-1] == "":
+        clean_lines.pop()
+    return clean_lines
 
 def _detect_newline(input_str: str, diff: str, mode: ApplyDiffMode) -> str:
     text = input_str if mode != "create" and "\n" in input_str else diff
@@ -132,9 +141,17 @@ def _parse_update_diff(lines: list[str], input_str: str):
     return chunks, parser.fuzz
 
 def _advance_cursor(anchor: str, lines: list[str], cursor: int, parser: ParserState) -> int:
+    # Try exact anchor match
+    for i in range(cursor, len(lines)):
+        if lines[i] == anchor:
+            return i + 1
+            
+    # Try fuzzy anchor match (ignoring whitespace)
     for i in range(cursor, len(lines)):
         if lines[i].strip() == anchor.strip():
+            parser.fuzz += 1
             return i + 1
+            
     return cursor
 
 def _read_section(lines: list[str], start_index: int) -> ReadSectionResult:
@@ -164,14 +181,43 @@ def _read_section(lines: list[str], start_index: int) -> ReadSectionResult:
     is_eof = index < len(lines) and lines[index] == END_FILE
     return ReadSectionResult(context, chunks, index + (1 if is_eof else 0), is_eof)
 
+def _equals_slice(
+    source: list[str], target: list[str], start: int, map_fn: Callable[[str], str]
+) -> bool:
+    """Helper to compare a slice of lines using a transformation function (like strip)."""
+    if start + len(target) > len(source):
+        return False
+    for offset, target_value in enumerate(target):
+        if map_fn(source[start + offset]) != map_fn(target_value):
+            return False
+    return True
+
 def _find_context(lines: list[str], context: list[str], start: int, eof: bool) -> Match:
-    # If there's no context, just return current cursor
     if not context:
         return Match(start, 0)
-    
+
+    # Tier 1: Exact Match (The Gold Standard)
     for i in range(start, len(lines) - len(context) + 1):
-        if all(lines[i+j].strip() == context[j].strip() for j in range(len(context))):
+        if _equals_slice(lines, context, i, lambda v: v):
             return Match(i, 0)
+
+    # Tier 2: Ignore Trailing Whitespace (Common LLM hallucination)
+    for i in range(start, len(lines) - len(context) + 1):
+        if _equals_slice(lines, context, i, lambda v: v.rstrip()):
+            return Match(i, 1)
+
+    # Tier 3: Ignore All Leading/Trailing Whitespace (Indentation flexible)
+    for i in range(start, len(lines) - len(context) + 1):
+        if _equals_slice(lines, context, i, lambda v: v.strip()):
+            return Match(i, 100)
+
+    # Fallback for EOF: If the model thinks it's at the end of the file
+    if eof:
+        end_start = max(0, len(lines) - len(context))
+        # Try a relaxed match at the very end of the file
+        if _equals_slice(lines, context, end_start, lambda v: v.strip()):
+            return Match(end_start, 10000)
+
     return Match(-1, 0)
 
 def _apply_chunks(input_str: str, chunks: list[Chunk], newline: str) -> str:
