@@ -79,8 +79,8 @@ def log_tool_msg(session_id: str, tool_id: str, tool_name: str, tool_args: str, 
     """
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute(
-            "INSERT INTO chat_log (session_id, role, tool_id, tool_name, tool_args) VALUES (?, ?, ?, ?, ?)",
-            (session_id, 'assistant', tool_id, tool_name, tool_args),
+            "INSERT INTO chat_log (session_id, role, content, tool_id, tool_name, tool_args) VALUES (?, ?, ?, ?, ?)",
+            (session_id, 'assistant', '', tool_id, tool_name, tool_args),
         )
         conn.execute(
             "INSERT INTO chat_log (session_id, role, content) VALUES (?, ?, ?)",
@@ -110,5 +110,5 @@ def load_history(session_id: str, limit: int | None = None) -> list[tuple[str, s
 def get_session_ids() -> list[str]:
     """Return a list of all distinct session identifiers stored in the DB."""
     with sqlite3.connect(DB_PATH) as conn:
-        cur = conn.execute("SELECT DISTINCT session_id FROM chat_log ORDER BY session_id ASC")
+        cur = conn.execute("SELECT DISTINCT session_id FROM chat_log ORDER BY ts DESC")
         return [row[0] for row in cur.fetchall()]

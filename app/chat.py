@@ -61,9 +61,20 @@ def build_messages(
 
     for role, content, tool_id, tool_name, tool_args in history:
         if tool_name:
-            msgs.append({"role": role, "tool_id": tool_id, "tool_args": tool_args})
+            msgs.append({
+                "role": role, 
+                "content": "",
+                "tool_calls": [{
+                            "id": tool_id,
+                            "type": "function",
+                            "function": {
+                                "name": tool_name,
+                                "arguments": tool_args or "{}",
+                            },
+                        }]
+                    })
         if role == 'tool':
-            msgs.append({"role": role, "content": content, "tool_id": tool_id})
+            msgs.append({"role": role, "content": content, "tool_call_id": tool_id})
         else:
             msgs.append({"role": role, "content": content})
 
@@ -264,8 +275,8 @@ def process_tool_calls(
             )
 
             # appending tool call to history
-            history.append(("assistant", ...))
-            history.append(("analysis", ...))
+            history.append(("assistant", "", tool_id, tool_name, tool_args))
+            history.append(("tool", result, tool_id, tool_name, tool_args))
 
             log_tool_msg(session_id, tool_id, tool_name, tool_args, result)
             
