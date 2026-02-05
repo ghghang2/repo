@@ -26,7 +26,7 @@ from .tools import TOOLS
 import time
 import concurrent.futures
 import logging
-from .db import log_tool_msg
+from .db import log_tool_msg, log_message
 
 logging.basicConfig(
     level=logging.INFO,

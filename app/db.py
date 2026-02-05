@@ -79,7 +79,7 @@ def log_tool_msg(session_id: str, tool_id: str, tool_name: str, tool_args: str, 
     """
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute(
-            "INSERT INTO chat_log (session_id, role, tool_id, tool_name, tool_args) VALUES (?, ?, ?)",
+            "INSERT INTO chat_log (session_id, role, tool_id, tool_name, tool_args) VALUES (?, ?, ?, ?, ?)",
             (session_id, 'assistant', tool_id, tool_name, tool_args),
         )
         conn.execute(
