@@ -26,6 +26,7 @@ from .tools import TOOLS
 import time
 import concurrent.futures
 import logging
+from .db import log_tool_msg
 
 logging.basicConfig(
     level=logging.INFO,
@@ -41,9 +42,10 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 def build_messages(
-    history: List[Tuple[str, str]],
+    history: Any,
     system_prompt: str,
     user_input: Optional[str] = None,
+    reasoning_content: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """Return the list of messages to send to the chat model.
 
@@ -58,12 +60,17 @@ def build_messages(
     """
     msgs: List[Dict[str, Any]] = [{"role": "system", "content": str(system_prompt)}]
 
-    for u, a in history:
-        msgs.append({"role": "user", "content": str(u)})
-        msgs.append({"role": "assistant", "content": str(a)})
+    for role, content, tool_id, tool_name, tool_args in history:
+        msgs.append({"role": role, "content": content})
 
     if user_input is not None:
         msgs.append({"role": "user", "content": str(user_input)})
+    
+    if reasoning_content is not None:
+        msgs.append({
+            "role": "analysis", 
+            "content": str(message['reasoning_content'])
+        })
 
     return msgs
 
@@ -132,6 +139,8 @@ def stream_and_collect(
 def process_tool_calls(
     client: Any,
     messages: List[Dict[str, Any]],
+    session_id: str,
+    history: List[Tuple[str, str]],
     tools: List[Dict[str, Any]],
     tool_calls: Optional[List[Dict[str, Any]]],
     finished: bool,
@@ -226,21 +235,23 @@ def process_tool_calls(
                 f"\n\n`{result}`\n\n"
                 f"</details>"
             )
-            full_text += tool_block
             tool_placeholder = st.empty()
             tool_placeholder.markdown(tool_block, unsafe_allow_html=True)
             
+            tool_id = tc.get("id")
+            tool_name = tc.get("name")
+            tool_args = tc.get("arguments")
             messages.append(
                 {
                     "role": "assistant",
                     "content": "",
                     "tool_calls": [
                         {
-                            "id": tc.get("id"),
+                            "id": tool_id,
                             "type": "function",
                             "function": {
-                                "name": tc.get("name"),
-                                "arguments": tc.get("arguments") or "{}",
+                                "name": tool_name,
+                                "arguments": tool_args or "{}",
                             },
                         }
                     ],
@@ -249,16 +260,29 @@ def process_tool_calls(
             messages.append(
                 {
                     "role": "tool",
-                    "tool_call_id": str(tc.get("id") or ""),
+                    "tool_call_id": str(tool_id or ""),
                     "content": result,
                 }
             )
+
+            # appending tool call to history
+            history.append(("assistant", ...))
+            history.append(("analysis", ...))
+
+            log_tool_msg(session_id, tool_id, tool_name, tool_args, result)
             
-        new_text, new_tool_calls, finished, reasoning_text = stream_and_collect(
+            
+        new_assistant_resp, new_tool_calls, finished, reasoning_text = stream_and_collect(
             client, messages, tools
         )
-        full_text += new_text
+
+        # appending reasoning to history
+        history.append(("analysis", reasoning_text))
+        history.append(("assistant", new_assistant_resp))
+
+        log_message(session_id, "analysis", reasoning_text)
+        log_message(session_id, "assistant", new_assistant_resp)
         
         tool_calls = new_tool_calls or None
             
-    return full_text
+    return history

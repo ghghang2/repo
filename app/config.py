@@ -10,10 +10,8 @@ NGROK_URL = "http://localhost:8000"
 
 MODEL_NAME = "unsloth/gpt-oss-20b-GGUF:F16"
 DEFAULT_SYSTEM_PROMPT = f'''
-Always ask for clarification before taking any steps beyond what the user specifically requested. Do not make assumptions about the user request.
 Be concise and accurate at all times.
 Tools are available to assist in fulfilling requests.
-If you are making major changes to a file, always create a copy of the current version with a date and timestamp. You can revert back to it if necessary.
 '''
 
 # --------------------------------------------------------------------------- #

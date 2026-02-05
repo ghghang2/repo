@@ -32,8 +32,11 @@ def init_db() -> None:
             CREATE TABLE IF NOT EXISTS chat_log (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
                 session_id  TEXT NOT NULL,
-                role        TEXT NOT NULL,   -- 'user' or 'assistant'
-                content     TEXT NOT NULL,
+                role        TEXT NOT NULL,
+                content     TEXT,
+                tool_id     TEXT,
+                tool_name     TEXT,
+                tool_args     TEXT,
                 ts          TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
             """
@@ -62,33 +65,46 @@ def log_message(session_id: str, role: str, content: str) -> None:
         )
         conn.commit()
 
+def log_tool_msg(session_id: str, tool_id: str, tool_name: str, tool_args: str, content: str) -> None:
+    """Persist a single chat line.
+
+    Parameters
+    ----------
+    session_id
+        Identifier of the chat session – e.g. a user ID or a UUID.
+    role
+        Either ``"user"`` or ``"assistant"``.
+    content
+        The raw text sent or received.
+    """
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            "INSERT INTO chat_log (session_id, role, tool_id, tool_name, tool_args) VALUES (?, ?, ?)",
+            (session_id, 'assistant', tool_id, tool_name, tool_args),
+        )
+        conn.execute(
+            "INSERT INTO chat_log (session_id, role, content) VALUES (?, ?, ?)",
+            (session_id, 'tool', content),
+        )
+        conn.commit()
+
 
 def load_history(session_id: str, limit: int | None = None) -> list[tuple[str, str]]:
     """Return the last *limit* chat pairs for the given session.
 
-    The return value is a list of ``(user_msg, assistant_msg)`` tuples.
+    The return value is a list of chat history.
     If *limit* is ``None`` the entire conversation is returned.
     """
     rows: list[tuple[str, str]] = []
     with sqlite3.connect(DB_PATH) as conn:
-        query = "SELECT role, content FROM chat_log WHERE session_id = ? ORDER BY id ASC"
+        query = "SELECT role, content, tool_id, tool_name, tool_args FROM chat_log WHERE session_id = ? ORDER BY id ASC"
         params = [session_id]
         if limit is not None:
             query += " LIMIT ?"
             params.append(limit)
         cur = conn.execute(query, params)
         rows = cur.fetchall()
-
-    # Re‑assemble pairs
-    history: list[tuple[str, str]] = []
-    _tmp_user: str | None = None
-    for role, content in rows:
-        if role == "user":
-            _tmp_user = content
-        else:  # assistant
-            history.append((_tmp_user or "", content))
-            _tmp_user = None
-    return history
+    return rows
 
 
 def get_session_ids() -> list[str]:
@@ -96,5 +112,3 @@ def get_session_ids() -> list[str]:
     with sqlite3.connect(DB_PATH) as conn:
         cur = conn.execute("SELECT DISTINCT session_id FROM chat_log ORDER BY session_id ASC")
         return [row[0] for row in cur.fetchall()]
-
-# End of file

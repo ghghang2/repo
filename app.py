@@ -135,9 +135,12 @@ def main() -> None:
     st.session_state.history = history
 
     # Render past messages
-    for user_msg, bot_msg in history:
-        st.chat_message("user").markdown(user_msg)
-        st.chat_message("assistant").markdown(bot_msg, unsafe_allow_html=True)
+    for role, content, tool_id, tool_name, tool_args in history:
+        ## message regarding assistant calling tool require some special treatments. others are fine as is.
+        if tool_name:
+            st.chat_message(role).markdown(tool_name + ' called with args: ' + tool_args, unsafe_allow_html=True)
+        else:
+            st.chat_message(role).markdown(content, unsafe_allow_html=True)
 
     # User input
     if user_input := st.chat_input("Enter request…"):
@@ -147,21 +150,20 @@ def main() -> None:
         client = get_client()
         tools = get_tools()
         msgs = build_messages(history, st.session_state.system_prompt, user_input)
-        # msgs = build_messages(history, st.session_state.system_prompt, st.session_state.repo_docs, user_input)
 
         with st.chat_message("assistant"):
-            # placeholder = st.empty()
             assistant_text, tool_calls, finished, reasoning_text = stream_and_collect(client, msgs, tools)
 
-        full_text = assistant_text
+            # appending reasoning to history
+            history.append(("analysis", reasoning_text))
+            history.append(("assistant", assistant_text))
+
+            log_message(session_id, "analysis", reasoning_text)
+            log_message(session_id, "assistant", assistant_text)
+
         if tool_calls and not finished:
-            # placeholder = st.empty()
-            full_text = process_tool_calls(client, msgs, tools, tool_calls, finished, assistant_text, reasoning_text)
-        else: 
-            full_text = assistant_text
-                
-        history.append((user_input, full_text))
-        log_message(session_id, "assistant", full_text)
+            history = process_tool_calls(client, msgs, session_id, history, tools, tool_calls, finished, assistant_text, reasoning_text)
+            
         st.session_state.history = history
 
     components.html(
