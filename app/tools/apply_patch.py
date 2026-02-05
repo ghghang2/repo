@@ -283,7 +283,7 @@ func = apply_patch
 name = "apply_patch"
 description = (
     "Apply a unified diff to a file inside the repository. "
-    "Supports create, update and delete operations. "
+    "Supports create, update and delete operations. op_type: create, update or delete"
     "Returns a JSON string with either a `result` key or an `error` key."
 )
 
