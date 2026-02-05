@@ -45,7 +45,6 @@ def build_messages(
     history: Any,
     system_prompt: str,
     user_input: Optional[str] = None,
-    reasoning_content: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """Return the list of messages to send to the chat model.
 
@@ -61,16 +60,15 @@ def build_messages(
     msgs: List[Dict[str, Any]] = [{"role": "system", "content": str(system_prompt)}]
 
     for role, content, tool_id, tool_name, tool_args in history:
-        msgs.append({"role": role, "content": content})
+        if tool_name:
+            msgs.append({"role": role, "tool_id": tool_id, "tool_args": tool_args})
+        if role == 'tool':
+            msgs.append({"role": role, "content": content, "tool_id": tool_id})
+        else:
+            msgs.append({"role": role, "content": content})
 
     if user_input is not None:
         msgs.append({"role": "user", "content": str(user_input)})
-    
-    if reasoning_content is not None:
-        msgs.append({
-            "role": "analysis", 
-            "content": str(message['reasoning_content'])
-        })
 
     return msgs
 
