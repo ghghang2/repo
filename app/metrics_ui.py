@@ -30,8 +30,8 @@ def parse_log(path_string: str = "llama_server.log"):
                     tps = float(m.group("value"))
                     break
         
-        emoji = "⚙️" if proc else "⏸️"
-        return f"**Status:** {emoji}\n\n**TPS:** `{tps}`\n\n*{time.strftime('%H:%M:%S')}*"
+        emoji = "🟢" if proc else "⚫"
+        return f"**Server:** {emoji}\n\n**TPS:** `{tps}`\n\n*{time.strftime('%H:%M:%S')}*"
     except:
         return "**Error reading log**"
 
@@ -62,5 +62,4 @@ def display_metrics_panel():
 
     # 2. Render the fragment
     with st.container(border=True):
-        st.write("### Server Status")
         metrics_fragment()
