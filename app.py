@@ -29,7 +29,6 @@ from app.tools import get_tools, TOOLS
 from app.tools.repo_overview import func
 from app.chat import build_messages, stream_and_collect, process_tool_calls
 from app.db import init_db, log_message, load_history, get_session_ids
-from app.metrics import get_llama_metrics
 from app.metrics_ui import display_metrics_panel
 
 # Initialise the database on first run
