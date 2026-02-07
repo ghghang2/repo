@@ -5,50 +5,8 @@ from pathlib import Path
 import streamlit as st
 from streamlit.runtime.scriptrunner import add_script_run_ctx, get_script_run_ctx
 import subprocess
-import streamlit.components.v1 as components
 
 TOKENS_PER_SEC_RE = re.compile(r"(?P<value>\d+(?:\.\d+)?)\s+tokens per second", re.IGNORECASE)
-
-import streamlit as st
-import streamlit.components.v1 as components
-
-import streamlit as st
-import streamlit.components.v1 as components
-
-def set_emoji_favicon(emoji):
-    # Convert emoji to SVG
-    svg_icon = f"""
-    <svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22>
-        <text y=%22.9em%22 font-size=%2290%22>{emoji}</text>
-    </svg>
-    """
-    
-    # We embed the emoji directly in the JS to ensure it's "fresh"
-    js_code = f"""
-    <div style="display:none;">
-        <script>
-            (function() {{
-                const updateIcon = () => {{
-                    const parentDoc = window.parent.document;
-                    let link = parentDoc.querySelector("link[rel*='icon']");
-                    
-                    if (!link) {{
-                        link = parentDoc.createElement('link');
-                        link.rel = 'icon';
-                        parentDoc.head.appendChild(link);
-                    }}
-                    
-                    link.href = "data:image/svg+xml,{svg_icon}";
-                }};
-                
-                // Run once immediately
-                updateIcon();
-            }})();
-        </script>
-    </div>
-    """
-    # Remove the 'key' argument; we use a small trick below to force update
-    components.html(js_code, height=0, width=0)
 
 def changed_files():
     # 1. Get list of files changed since the last push
@@ -101,9 +59,8 @@ def parse_log(path_string: str = "llama_server.log"):
                     break
         
         emoji = "🟢" if proc else "⚫"
-        
         changed_files_list = changed_files()
-        return emoji, f"**Server:** {emoji}\n\n**TPS:** `{tps}`\n\n*{time.strftime('%H:%M:%S')}*" + '\n\n>' + '\n\n>'.join(changed_files_list)
+        return f"**Server:** {emoji}\n\n**TPS:** `{tps}`\n\n*{time.strftime('%H:%M:%S')}*" + '\n\n>' + '\n\n>'.join(changed_files_list)
     except:
         return "❌", "**Error reading log**"
 
@@ -118,10 +75,9 @@ def metrics_fragment():
     """This refreshes every second automatically when the script is IDLE."""
     if "latest_metrics_md" in st.session_state:
         # We wrap this in a unique keyed container so app.py can target it
-        emoji, content = st.session_state.latest_metrics_md
+        content = st.session_state.latest_metrics_md
         st.session_state.metrics_placeholder = st.empty()
         st.session_state.metrics_placeholder.markdown(content)
-        set_emoji_favicon(emoji)
 
 def display_metrics_panel():
     """Main entry point for app.py sidebar."""
