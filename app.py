@@ -145,6 +145,7 @@ def main() -> None:
                         push_main()
                         st.session_state.has_pushed = True
                         st.success("✅ Repository pushed to GitHub.")
+                        changed_files_list = changed_files()
                     except Exception as exc:
                         st.error(f"❌ Push failed: {exc}")
 
