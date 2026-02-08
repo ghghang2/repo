@@ -160,6 +160,12 @@ def browser(action: str, *, url: str | None = None, path: str | None = None, sel
                 raise ValueError("selector and text are required for type")
             _mgr.type_text(selector, text)
             return json.dumps({"result": {"action": "type", "selector": selector, "text": text}})
+        # New action to retrieve current page HTML
+        if action == "get_html":
+            if not _mgr.page:
+                raise RuntimeError("Browser not started \u2013 call start() first")
+            html = _mgr.page.content()
+            return json.dumps({"result": {"action": "get_html", "html": html}})
         return json.dumps({"error": f"Unknown action '{action}'"})
     except Exception as exc:
         return json.dumps({"error": str(exc)})
@@ -176,7 +182,7 @@ schema = {
     "parameters": {
         "type": "object",
         "properties": {
-            "action": {"type": "string", "enum": ["start", "stop", "navigate", "screenshot", "click", "type"]},
+            "action": {"type": "string", "enum": ["start", "stop", "navigate", "screenshot", "click", "type", "get_html"]},
             "url": {"type": "string"},
             "path": {"type": "string"},
             "selector": {"type": "string"},
