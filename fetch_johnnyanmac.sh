@@ -37,7 +37,8 @@ echo "Fetching comments …"
 PAGE=0
 while :; do
   RESP=$(curl -s "$ALGOLIA?tags=comment&hitsPerPage=1000&user=$USERNAME&page=$PAGE")
-  echo "$RESP" | jq -c '.hits[]' >> "$USERNAME_comments.json"
+  # Extract only the comment text
+  echo "$RESP" | jq -r '.hits[] | .text // empty' >> "$USERNAME_comments.txt"
   HITS=$(echo "$RESP" | jq '.hits | length')
   [[ "$HITS" -lt 1000 ]] && break
   PAGE=$((PAGE+1))
