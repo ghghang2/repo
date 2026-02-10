@@ -4,7 +4,7 @@
 # --------------------------------------------------------------
 set -euo pipefail
 
-USERNAME="spez"   # <-- change if you want a different account
+USERNAME="johnnyanmac"   # <-- change if you want a different account
 BASE_ITEM="https://hacker-news.firebaseio.com/v0/item"
 BASE_USER="https://hacker-news.firebaseio.com/v0/user"
 ALGOLIA="https://hn.algolia.com/api/v1/search_by_date"

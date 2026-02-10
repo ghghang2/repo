@@ -18,7 +18,24 @@ def build_api_messages(
     msgs = [{"role": "system", "content": system_prompt}]
     if repo_docs:
         msgs.append({"role": "assistant", "content": repo_docs})
+    # Enforce a maximum context length to avoid exceeding the model's limit.
+    # The context length is estimated by word count; if it exceeds
+    # ``max_context_tokens`` we trim the oldest messages.
+    max_context_tokens = 4000  # default value, can be overridden if needed
+    # Build a preliminary list to compute token count.
+    preliminary_msgs = ["system", "repo_docs"]
     for user_msg, bot_msg in history:
+        preliminary_msgs.append("user")
+        preliminary_msgs.append("assistant")
+    # Rough token estimate: 1 token ≈ 4 characters.  Here we use word count.
+    token_estimate = sum(len(msg.split()) for msg in preliminary_msgs if isinstance(msg, str))
+    # Trim from the start until within limit.
+    trimmed_history = history[:]
+    while token_estimate > max_context_tokens and trimmed_history:
+        # Remove the oldest pair
+        token_estimate -= len(trimmed_history[0][0].split()) + len(trimmed_history[0][1].split())
+        trimmed_history.pop(0)
+    for user_msg, bot_msg in trimmed_history:
         msgs.append({"role": "user", "content": user_msg})
         msgs.append({"role": "assistant", "content": bot_msg})
     # The client will pass `tools=tools` when calling chat.completions.create
