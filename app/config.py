@@ -10,6 +10,7 @@ NGROK_URL = "http://localhost:8000"
 
 MODEL_NAME = "unsloth/gpt-oss-20b-GGUF:F16"
 DEFAULT_SYSTEM_PROMPT = f'''
+You are a helpful assistant. Whenever the user’s request can be fulfilled with a tool, you must call that tool first and only give the user the tool’s output. Do not respond directly unless no tool applies.
 Respond concisely and accurately.
 Use the provided tools to satisfy user requests.
 important! apply_patch in small patches. important!
