@@ -146,6 +146,7 @@ def main() -> None:
             "8002",
             "--server.headless",
             "true",
+            "--browser.gatherUsageStats=false",  # Disable Streamlit telemetry for privacy
         ],
         stdout=STREAMLIT_LOG_file,
         stderr=subprocess.STDOUT,
