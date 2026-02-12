@@ -100,8 +100,7 @@ class SupervisorProcess(mp.Process):
         # Main loop – process events from the agent
         while not self._terminate_flag.is_set():
             try:
-            raw_event: Dict[str, Any] = self.agent_outbound.get(timeout=0.1)
-            event = raw_event
+                event: AgentEvent = self.agent_outbound.get(timeout=0.1)
             except queue.Empty:
                 continue
             log.debug("Supervisor received event: %s", event)
@@ -110,14 +109,20 @@ class SupervisorProcess(mp.Process):
             policy_decision = self.config.policy_func(event)
             log.debug("Policy decision for event %s: %s", event, policy_decision)
             if policy_decision:
-                # Create an interjection – a simple apology message
+                # Create an interjection event and send it to the agent
                 interjection_content = "Apology: I made a mistake. Let's correct it."
-                interjection_msg = {
-                    "session_id": event.get("session_id", "supervisor"),
-                    "prompt": interjection_content,
-                }
-                log.info("Supervisor interjecting: %s", interjection_msg)
-                self.agent_inbox.put(interjection_msg)
+                interjection_event = AgentEvent(
+                    role="assistant",
+                    content="",
+                    session_id=event.get("session_id", "supervisor"),
+                    prompt=interjection_content,
+                    type="interjection",
+                )
+                log.info("Supervisor interjecting: %s", interjection_event)
+                # Send interjection to agent
+                self.agent_inbox.put(interjection_event)
+                # Also forward to external consumers
+                self.supervisor_outbound.put(interjection_event)
             # Continue loop
         log.info("Supervisor terminating")
 

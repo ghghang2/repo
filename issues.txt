@@ -1,7 +1,7 @@
 # Multi‑Agent Project Issue Tracker
 
 ## 1. Inconsistent event types
-`AgentProcess` uses plain dictionaries for events while the rest of the code imports and expects `AgentEvent` dataclasses. This mismatch can cause runtime errors and hinders type\u2011checking. **Status: ✅ Fixed**
+`AgentProcess` uses plain dictionaries for events while the rest of the code imports and expects `AgentEvent` dataclasses. This mismatch can cause runtime errors and hinders type-checking. **Status: ✅ Fixed**
 
 ## 2. AgentProcess sends raw dictionaries
 The outbound queue receives simple dicts, whereas the supervisor expects `AgentEvent` instances. Although the current policy accepts either, the inconsistency is confusing and fragile for future extensions.

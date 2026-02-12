@@ -48,6 +48,8 @@ def should_interject(event: AgentEvent | Dict[str, Any]) -> bool:
             return True
     # Also check for prompt field in done events
     prompt = event.get("prompt", "") if isinstance(event, dict) else getattr(event, "prompt", "")
+    if prompt is None:
+        prompt = ""
     for pat in _INTERJECTION_PATTERNS:
         if pat.search(prompt):
             return True

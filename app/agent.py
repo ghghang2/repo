@@ -39,6 +39,7 @@ class AgentEvent:
 
     role: str
     content: str
+    token: str | None = None
     session_id: str | None = None
     agent_id: str | None = None
     type: str | None = None
@@ -100,17 +101,19 @@ class AgentProcess(Process):
     def _main_loop(self) -> None:
         """Continuously process incoming chat messages.
 
-        Expected queue entries: dict with ``session_id`` and ``prompt``.
+        Expected queue entries: :class:`AgentEvent`.
         """
         while True:
-            msg: Dict[str, Any] = self.inbound_queue.get()
-            if msg.get("type") == "shutdown":
+            event: AgentEvent = self.inbound_queue.get()
+            # ``AgentEvent`` is a dataclass; we use its ``type`` field
+            if getattr(event, "type", None) == "shutdown":
                 log.info("Shutdown signal received")
                 break
-            session_id = msg.get("session_id")
-            prompt = msg.get("prompt")
+            # The event should contain a session_id and prompt
+            session_id = getattr(event, "session_id", None)
+            prompt = getattr(event, "prompt", None)
             if not session_id or not prompt:
-                log.warning("Malformed message: %s", msg)
+                log.warning("Malformed message: %s", event)
                 continue
             self._handle_chat(session_id, prompt)
 
@@ -133,23 +136,24 @@ class AgentProcess(Process):
             if stream_fn is None:
                 raise RuntimeError("LLM client lacks streaming interface")
             async for token in stream_fn(prompt):
-                payload = {
-                    "role": "assistant",
-                    "token": token,
-                    "session_id": session_id,
-                    "agent_id": self.agent_id,
-                    "type": "token",
-                }
+                payload = AgentEvent(
+                    role="assistant",
+                    content="",
+                    token=token,
+                    session_id=session_id,
+                    agent_id=self.agent_id,
+                    type="token",
+                )
                 self.outbound_queue.put(payload)
             # Notify supervisor of completion – include the original prompt
-            done_event = {
-                "role": "assistant",
-                "content": "",
-                "session_id": session_id,
-                "agent_id": self.agent_id,
-                "type": "done",
-                "prompt": prompt,
-            }
+            done_event = AgentEvent(
+                role="assistant",
+                content="",
+                session_id=session_id,
+                agent_id=self.agent_id,
+                type="done",
+                prompt=prompt,
+            )
             self.outbound_queue.put(done_event)
 
         asyncio.run(_stream())
