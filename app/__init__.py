@@ -3,4 +3,4 @@
 Convenient import hub for the app package.
 """
 
-__all__ = ["client", "config", "docs_extractor", "utils", "remote", "server", "llama_client", "db"]
+__all__ = ["client", "config", "docs_extractor", "utils", "remote", "db", "agent"]

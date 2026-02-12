@@ -67,11 +67,12 @@ class AgentProcess(Process):
         Queue for sending responses back to the supervisor.
     """
 
-    def __init__(self, agent_id: str, inbound_queue: Queue, outbound_queue: Queue):
+    def __init__(self, agent_id: str, inbound_queue: Queue, outbound_queue: Queue, llm_cls: type | None = None):
         super().__init__(name=f"Agent-{agent_id}")
         self.agent_id = agent_id
         self.inbound_queue = inbound_queue
         self.outbound_queue = outbound_queue
+        self.llm_cls = llm_cls or LlamaClient
         self.client: LlamaClient | None = None
 
     def _setup_logging(self) -> None:

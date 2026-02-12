@@ -14,7 +14,7 @@ The policy only signals whether an interjection should occur; the supervisor alw
 `_agent_target` returns an empty dictionary and is never invoked. The agent is started directly with its arguments, making the helper redundant.
 
 ## 5. Missing persistence layer (`app/db.py`)
-`ChatHistory` is referenced but the implementation file does not exist. Without persistence, chat history cannot be stored or retrieved, breaking the plan for Phase\u202f2.
+`ChatHistory` is referenced but the implementation file does not exist. Without persistence, chat history cannot be stored or retrieved, breaking the plan for Phase 2.
 
 ## 6. Missing HTTP proxy (`app/server.py`)
 The plan calls for a `/chat/{id}` endpoint that forwards requests to the Llama client. No such route exists, so integration tests that hit the proxy will fail.
@@ -22,10 +22,10 @@ The plan calls for a `/chat/{id}` endpoint that forwards requests to the Llama c
 ## 7. Inefficient async handling in `AgentProcess`
 `asyncio.run` is called for every incoming message, which repeatedly creates and destroys an event loop. This is unnecessary overhead and can block the process if many messages arrive.
 
-## 8. Policy checks for non\u2011existent `token` field
+## 8. Policy checks for non existent `token` field
 `should_interject` examines the `token` key, but `AgentProcess` emits events with a `content` key. The check may never trigger, causing missed interjections.
 
-## 9. Supervisor ignores policy\u2011provided messages
+## 9. Supervisor ignores policy provided messages
 The policy currently returns a boolean only. The supervisor discards any message content, always sending the same apology string instead of a tailored response.
 
 ## 10. Graceful shutdown not propagated to agent
