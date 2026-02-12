@@ -1,20 +1,20 @@
 # Multi‑Agent Implementation Tasks
 
 ## Phase 1 – Environment & Tooling
-1. completed
-2. completed
-3. Write a unit test (`tests/test_server.py`) that starts the server, sends a request, and verifies a 200 response.
-4. Verify that `llama‑server` is reachable by adding a test that performs a simple `/v1/chat/completions` call.
+1. ... [completed]
+2. ... [completed]
+3. Write a unit test (`tests/test_server.py`) that starts the server, sends a request, and verifies a 200 response. [completed]
+4. Verify that `llama‑server` is reachable by adding a test that performs a simple `/v1/chat/completions` call. [completed]
 
 ## Phase 2 – Core Building Blocks
 ### 2.1 LLM Wrapper
-5. Add optional **stream_chat** method to `LlamaClient` that simply forwards to `chat` for compatibility.
+5. Add optional **stream_chat** method to `LlamaClient` that simply forwards to `chat` for compatibility. [completed]
 6. Add unit tests for `LlamaClient.chat`:
    - Happy path – mock `requests.post` and assert token stream.
    - Error path – mock a 500 response and assert RuntimeError.
 
 ### 2.2 Persistence Layer
-7. Add index on `session_id` if not already present (already in db.py).
+7. Add index on `session_id` if not already present (already in db.py). [completed]
 8. Write tests for `init_db`, `log_message`, `load_history`, and `get_session_ids`.
 
 ### 2.3 HTTP Proxy

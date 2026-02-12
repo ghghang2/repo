@@ -22,3 +22,25 @@ class ChatHistory:
 
     def load_history(self, session_id: str, limit: int | None = None):
         return db.load_history(session_id, limit)
+
+
+# ---------------------------------------------------------------------------
+#  Legacy module level API
+# ---------------------------------------------------------------------------
+# The original repository exposed free‑standing functions.  The FastAPI
+# proxy imports ``app.chat_history`` and calls ``insert`` directly.  To
+# maintain backward compatibility we provide thin wrappers that simply
+# delegate to a singleton ``ChatHistory`` instance.
+
+_singleton = ChatHistory()
+
+def insert(session_id: str, role: str, content: str) -> None:  # pragma: no cover - trivial wrapper
+    """Insert a chat line using the singleton wrapper.
+
+    The function is intentionally tiny and mirrors the old public API.
+    """
+    _singleton.insert(session_id, role, content)
+
+def load_history(session_id: str, limit: int | None = None):  # pragma: no cover - trivial wrapper
+    """Return chat history via the singleton wrapper."""
+    return _singleton.load_history(session_id, limit)
