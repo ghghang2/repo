@@ -67,6 +67,8 @@ class SupervisorProcess(mp.Process):
         # Queues for communication with the agent
         self.agent_inbox: mp.Queue[AgentEvent] = mp.Queue()
         self.agent_outbound: mp.Queue[AgentEvent] = mp.Queue()
+        # Supervisor's own outbound queue for external consumers
+        self.supervisor_outbound: mp.Queue[AgentEvent] = mp.Queue()
         self._terminate_flag = mp.Event()
         self.agent_process: AgentProcess | None = None
 
@@ -102,10 +104,11 @@ class SupervisorProcess(mp.Process):
             except queue.Empty:
                 continue
             log.debug("Supervisor received event: %s", event)
-            # Pass through the event
-            # In a real system we might publish to a message broker.
-            # For the test we simply log it.
-            if self.config.policy_func(event):
+            # Pass through the event to external consumers
+            self.supervisor_outbound.put(event)
+            policy_decision = self.config.policy_func(event)
+            log.debug("Policy decision for event %s: %s", event, policy_decision)
+            if policy_decision:
                 # Create an interjection – a simple apology message
                 interjection = AgentEvent(
                     role="assistant",

@@ -132,12 +132,13 @@ class AgentProcess(Process):
                     "agent_id": self.agent_id,
                 }
                 self.outbound_queue.put(payload)
-            # Notify supervisor of completion
+            # Notify supervisor of completion – include the original prompt
             self.outbound_queue.put(
                 {
                     "type": "done",
                     "session_id": session_id,
                     "agent_id": self.agent_id,
+                    "prompt": prompt,
                 }
             )
 

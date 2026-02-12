@@ -15,7 +15,7 @@ be unit‑tested in isolation.
 from __future__ import annotations
 
 import re
-from typing import Iterable
+from typing import Iterable, Dict, Any
 
 from .agent import AgentEvent
 
@@ -23,17 +23,33 @@ _INTERJECTION_PATTERNS = [re.compile(r"\berror\b", re.IGNORECASE),
                           re.compile(r"\bmistake\b", re.IGNORECASE)]
 
 
-def should_interject(event: AgentEvent) -> bool:
+def should_interject(event: AgentEvent | Dict[str, Any]) -> bool:
     """Return ``True`` if the policy decides an interjection is needed.
 
-    Parameters
-    ----------
-    event:
-        The event to evaluate.
+    The policy inspects the *token* field of a ``token`` event and the
+    *content* field of any event.  The implementation accepts either
+    an :class:`AgentEvent` instance or a plain ``dict`` (the format used
+    by :class:`AgentProcess`).
     """
-    content = event.content or ""
+    # Normalise to dict
+    if isinstance(event, dict):
+        token = event.get("token")
+        content = event.get("content", "")
+    else:
+        token = getattr(event, "token", None)
+        content = getattr(event, "content", "")
+
+    if token:
+        for pat in _INTERJECTION_PATTERNS:
+            if pat.search(token):
+                return True
     for pat in _INTERJECTION_PATTERNS:
         if pat.search(content):
+            return True
+    # Also check for prompt field in done events
+    prompt = event.get("prompt", "") if isinstance(event, dict) else getattr(event, "prompt", "")
+    for pat in _INTERJECTION_PATTERNS:
+        if pat.search(prompt):
             return True
     return False
 
