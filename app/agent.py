@@ -161,3 +161,14 @@ class AgentProcess(Process):
             prompt=prompt,
         )
         self.outbound_queue.put(done_event)
+
+    # ---------------------------------------------------------------------
+    # Public API helpers
+    # ---------------------------------------------------------------------
+    def shutdown(self) -> None:
+        """Send a shutdown event into the inbound queue.
+
+        The agent process will exit its main loop when it receives a
+        :pyattr:`AgentEvent.type` of ``"shutdown"``.
+        """
+        self.inbound_queue.put(AgentEvent(role="assistant", content="", type="shutdown"))

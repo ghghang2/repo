@@ -52,59 +52,77 @@ class SupervisorConfig:
 class SupervisorProcess(mp.Process):
     """Supervisor that forwards events between an agent and a policy."""
 
-    def __init__(self, config: SupervisorConfig | None = None, *args, **kwargs):
+    def __init__(
+        self,
+        config: SupervisorConfig | None = None,
+        agent_names: list[str] | None = None,
+        *args,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self.config = config or SupervisorConfig()
-        # Queues for communication with the agent
-        self.agent_inbox: mp.Queue[AgentEvent] = mp.Queue()
-        self.agent_outbound: mp.Queue[AgentEvent] = mp.Queue()
+        # Agent names determines how many agent processes to spawn.
+        self.agent_names = agent_names or [self.config.agent_name]
+        # Queues for communication with each agent.
+        self.agent_inboxes: dict[str, mp.Queue[AgentEvent]] = {
+            name: mp.Queue() for name in self.agent_names
+        }
+        self.agent_outbounds: dict[str, mp.Queue[AgentEvent]] = {
+            name: mp.Queue() for name in self.agent_names
+        }
         # External consumers queue
         self.supervisor_outbound: mp.Queue[AgentEvent] = mp.Queue()
         self._terminate_flag = mp.Event()
-        self.agent_process: AgentProcess | None = None
+        self.agent_processes: dict[str, AgentProcess] = {}
 
     def run(self) -> None:  # pragma: no cover
         log.info("Supervisor starting")
         # Start the underlying agent process
-        self.agent_process = AgentProcess(
-            self.config.agent_name,
-            self.agent_inbox,
-            self.agent_outbound,
-        )
-        self.agent_process.start()
+        # Start one agent process per name.
+        for name in self.agent_names:
+            agent = AgentProcess(
+                name,
+                self.agent_inboxes[name],
+                self.agent_outbounds[name],
+            )
+            agent.start()
+            self.agent_processes[name] = agent
         # Main event loop
         while not self._terminate_flag.is_set():
-            try:
-                event: AgentEvent = self.agent_outbound.get(timeout=0.1)
-            except queue.Empty:
-                continue
-            log.debug("Supervisor received event: %s", event)
-            # Forward event to external consumers
-            self.supervisor_outbound.put(event)
-            if self.config.policy_func(event):
-                # Preserve original error context
-                original_msg = getattr(event, "content", "") or getattr(event, "prompt", "")
-                interjection_content = (
-                    f"Apology: I made a mistake. Let's correct it. Original issue: {original_msg}"
-                )
-                interjection_event = AgentEvent(
-                    role="assistant",
-                    content="",
-                    session_id=getattr(event, "session_id", "supervisor"),
-                    prompt=interjection_content,
-                    type="interjection",
-                )
-                log.info("Supervisor interjecting: %s", interjection_event)
-                # Send interjection to agent and external consumers
-                self.agent_inbox.put(interjection_event)
-                self.supervisor_outbound.put(interjection_event)
+            for name, out_q in self.agent_outbounds.items():
+                try:
+                    event: AgentEvent = out_q.get(timeout=0.1)
+                except queue.Empty:
+                    continue
+                log.debug("Supervisor received event from %s: %s", name, event)
+                # Forward event to external consumers
+                self.supervisor_outbound.put(event)
+                if self.config.policy_func(event):
+                    # Preserve original error context
+                    original_msg = getattr(event, "content", "") or getattr(event, "prompt", "")
+                    interjection_content = (
+                        f"Apology: I made a mistake. Let's correct it. Original issue: {original_msg}"
+                    )
+                    interjection_event = AgentEvent(
+                        role="assistant",
+                        content="",
+                        session_id=getattr(event, "session_id", "supervisor"),
+                        prompt=interjection_content,
+                        type="interjection",
+                    )
+                    log.info("Supervisor interjecting on %s: %s", name, interjection_event)
+                    # Send interjection to agent and external consumers
+                    self.agent_inboxes[name].put(interjection_event)
+                    self.supervisor_outbound.put(interjection_event)
         log.info("Supervisor terminating")
 
     def terminate(self) -> None:  # pragma: no cover
         self._terminate_flag.set()
         if self.agent_process and self.agent_process.is_alive():
-            self.agent_process.terminate()
-            self.agent_process.join()
+        for agent in self.agent_processes.values():
+            if agent.is_alive():
+                agent.terminate()
+                agent.join()
         super().terminate()
 
 
