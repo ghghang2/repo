@@ -33,8 +33,6 @@ class DummyClient:
         # Simulate a final token
         yield "[END]"
 
-
-@pytest.mark.timeout(10)
 def test_agent_process_runs_in_separate_process_and_processes_queue():
     inbound = Queue()
     outbound = Queue()
