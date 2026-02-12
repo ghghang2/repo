@@ -1,0 +1,115 @@
+"""Agent process implementation.
+
+This module defines :class:`AgentProcess`, which runs as a separate
+process.  Each agent has an inbound message queue that receives chat
+requests from the supervisor.  The agent forwards the request to the
+LLM wrapper, streams the response back to the supervisor, and may
+generate interjection messages.
+
+The implementation is intentionally lightweight: it focuses on the
+core loop and uses :mod:`multiprocessing` primitives so it can be
+started from the supervisor.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import sys
+from multiprocessing import Process, Queue
+from typing import Dict, Any
+
+# Import the LLM wrapper (will be defined elsewhere)
+try:  # pragma: no cover - guard for dev environments
+    from .llama_client import LlamaClient
+except Exception:  # pragma: no cover
+    LlamaClient = None
+
+log = logging.getLogger(__name__)
+
+
+class AgentProcess(Process):
+    """A single agent running in its own process.
+
+    Parameters
+    ----------
+    agent_id: str
+        Identifier used in URLs and logs.
+    inbound_queue: Queue
+        Queue from which the agent receives chat requests.
+    outbound_queue: Queue
+        Queue for sending responses back to the supervisor.
+    """
+
+    def __init__(self, agent_id: str, inbound_queue: Queue, outbound_queue: Queue):
+        super().__init__(name=f"Agent-{agent_id}")
+        self.agent_id = agent_id
+        self.inbound_queue = inbound_queue
+        self.outbound_queue = outbound_queue
+        self.client: LlamaClient | None = None
+
+    def _setup_logging(self) -> None:
+        handler = logging.StreamHandler(sys.stdout)
+        formatter = logging.Formatter(
+            f"[%(asctime)s] [Agent:{self.agent_id}] %(levelname)s: %(message)s"
+        )
+        handler.setFormatter(formatter)
+        log.addHandler(handler)
+        log.setLevel(logging.INFO)
+
+    def _initialize_llm(self) -> None:
+        if LlamaClient is None:
+            raise RuntimeError("LlamaClient not available – missing llama_client module")
+        self.client = LlamaClient()
+
+    def run(self) -> None:  # pragma: no cover – executed in a separate process
+        self._setup_logging()
+        try:
+            self._initialize_llm()
+            log.info("Agent process started")
+            self._main_loop()
+        except Exception as exc:  # pragma: no cover
+            log.exception("Fatal error in agent process: %s", exc)
+            sys.exit(1)
+
+    def _main_loop(self) -> None:
+        """Continuously process incoming chat messages.
+
+        Expected queue entries: dict with ``session_id`` and ``prompt``.
+        """
+        while True:
+            msg: Dict[str, Any] = self.inbound_queue.get()
+            if msg.get("type") == "shutdown":
+                log.info("Shutdown signal received")
+                break
+            session_id = msg.get("session_id")
+            prompt = msg.get("prompt")
+            if not session_id or not prompt:
+                log.warning("Malformed message: %s", msg)
+                continue
+            self._handle_chat(session_id, prompt)
+
+    def _handle_chat(self, session_id: str, prompt: str) -> None:
+        """Send prompt to LLM and stream tokens back via outbound queue."""
+        async def _stream():
+            if self.client is None:
+                raise RuntimeError("LLM client not initialized")
+            async for token in self.client.stream_chat(prompt):
+                payload = {
+                    "type": "token",
+                    "session_id": session_id,
+                    "token": token,
+                    "agent_id": self.agent_id,
+                }
+                self.outbound_queue.put(payload)
+            # Notify supervisor of completion
+            self.outbound_queue.put(
+                {
+                    "type": "done",
+                    "session_id": session_id,
+                    "agent_id": self.agent_id,
+                }
+            )
+
+        asyncio.run(_stream())

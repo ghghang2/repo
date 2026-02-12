@@ -24,7 +24,6 @@ Each phase contains concrete, incremental tasks and the tools we will use.
 
 **Deliverables**: Minimal test against `llama-server` passes.
 
----
 **Phase 1: Complete**
 ---
 
@@ -55,6 +54,9 @@ Each phase contains concrete, incremental tasks and the tools we will use.
   3. Stream response back to the client.
   4. Write unit tests for proxy logic.
 
+
+**Phase 2: Complete**
+---
 ---
 
 ## Phase 3 – Agent Implementation

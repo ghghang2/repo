@@ -99,6 +99,9 @@ def _normalize_diff_lines(diff: str) -> list[str]:
         # Skip headers that look like Unified Diff metadata
         if line.startswith(("--- ", "+++ ", "Index: ", "diff --git", "*** Update File:", "*** Add File:", "*** Delete File:")):
             continue
+        # Also skip the End of File markers that LLM might append
+        if "*** End of File ***" in line:
+            continue
         clean_lines.append(line)
         
     if clean_lines and clean_lines[-1] == "":
