@@ -5,6 +5,8 @@ httpx
 openai
 streamlit
 gitpython
-PyGithub
-playwright
-requests
+pygithub
+flask
+fastapi
+pytest
+pyngrok

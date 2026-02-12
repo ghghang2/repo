@@ -116,11 +116,10 @@ def main() -> None:
         llama_proc.terminate()
         sys.exit("[ERROR] llama-server failed to start")
 
-    # --- Install required Python packages ----------------------------
-    print("Installing Python dependencies…")
-    # 1. Basic Python packages for the UI and GitHub integration.
-    _run("pip install -q streamlit pygithub pyngrok", shell=True)
-    # 2. Install Playwright and the Firefox browser bundle.
+    # --- Install required packages ----------------------------
+    print("Installing dependencies…")
+    _run("pip install -r requirements.txt -qqq", shell=True)
+    #    Install Playwright and the Firefox browser bundle.
     #    The Playwright installation requires system libraries; install those
     #    first via apt-get. These commands are prefixed with ``sudo`` so they
     #    run as root, which is typical for a Docker container or a CI
@@ -130,7 +129,6 @@ def main() -> None:
         "sudo apt-get install -y libxcomposite1 libgtk-3-0 libatk1.0-0",
         shell=True,
     )
-    _run("pip install -q playwright", shell=True)
     # Playwright may need additional system dependencies; the --with-deps
     # flag instructs Playwright to install them automatically.
     _run("playwright install --with-deps firefox", shell=True)
