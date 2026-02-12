@@ -28,7 +28,7 @@ import sys
 import threading
 import time
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any, Callable, Dict
 
 from .agent import AgentProcess, AgentEvent
 from .policy import should_interject
@@ -100,7 +100,8 @@ class SupervisorProcess(mp.Process):
         # Main loop – process events from the agent
         while not self._terminate_flag.is_set():
             try:
-                event: AgentEvent = self.agent_outbound.get(timeout=0.1)
+            raw_event: Dict[str, Any] = self.agent_outbound.get(timeout=0.1)
+            event = raw_event
             except queue.Empty:
                 continue
             log.debug("Supervisor received event: %s", event)

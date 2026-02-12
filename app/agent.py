@@ -31,10 +31,18 @@ class AgentEvent:
         Either ``assistant`` or ``user``.
     content:
         The textual content of the message.
+    session_id: str | None = None
+    agent_id: str | None = None
+    type: str | None = None
+    prompt: str | None = None
     """
 
     role: str
     content: str
+    session_id: str | None = None
+    agent_id: str | None = None
+    type: str | None = None
+    prompt: str | None = None
 
 # Import the LLM wrapper (will be defined elsewhere)
 try:  # pragma: no cover - guard for dev environments
@@ -126,20 +134,22 @@ class AgentProcess(Process):
                 raise RuntimeError("LLM client lacks streaming interface")
             async for token in stream_fn(prompt):
                 payload = {
-                    "type": "token",
-                    "session_id": session_id,
+                    "role": "assistant",
                     "token": token,
+                    "session_id": session_id,
                     "agent_id": self.agent_id,
+                    "type": "token",
                 }
                 self.outbound_queue.put(payload)
             # Notify supervisor of completion – include the original prompt
-            self.outbound_queue.put(
-                {
-                    "type": "done",
-                    "session_id": session_id,
-                    "agent_id": self.agent_id,
-                    "prompt": prompt,
-                }
-            )
+            done_event = {
+                "role": "assistant",
+                "content": "",
+                "session_id": session_id,
+                "agent_id": self.agent_id,
+                "type": "done",
+                "prompt": prompt,
+            }
+            self.outbound_queue.put(done_event)
 
         asyncio.run(_stream())
