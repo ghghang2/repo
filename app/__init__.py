@@ -1,6 +1,6 @@
-# app/__init__.py
-"""
-Convenient import hub for the app package.
-"""
+"""Package initialisation for the multi‑agent system.
 
-__all__ = ["client", "config", "docs_extractor", "utils", "remote", "db", "agent"]
+The presence of this file turns the :pycode:`app` directory into a
+package, allowing imports such as ``import app.agent`` used in the test
+suite.  No additional code is required.
+"""

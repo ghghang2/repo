@@ -85,9 +85,9 @@ class AgentProcess(Process):
         log.setLevel(logging.INFO)
 
     def _initialize_llm(self) -> None:
-        if LlamaClient is None:
-            raise RuntimeError("LlamaClient not available \u2013 missing llama_client module")
-        self.client = LlamaClient()
+        if self.llm_cls is None:
+            raise RuntimeError("LLM client class not provided")
+        self.client = self.llm_cls()
 
     def run(self) -> None:  # pragma: no cover – executed in a separate process
         self._setup_logging()
@@ -113,10 +113,18 @@ class AgentProcess(Process):
             event: AgentEvent = await asyncio.get_running_loop().run_in_executor(
                 None, self.inbound_queue.get
             )
-            if getattr(event, "type", None) == "shutdown":
+            event_type = getattr(event, "type", None)
+            if event_type == "shutdown":
                 log.info("Shutdown signal received")
                 self.loop.stop()
                 break
+            # Handle interjection by treating it as a normal chat
+            if event_type == "interjection":
+                session_id = getattr(event, "session_id", None)
+                prompt = getattr(event, "prompt", None)
+                if session_id and prompt:
+                    await self._handle_chat_async(session_id, prompt)
+                continue
             session_id = getattr(event, "session_id", None)
             prompt = getattr(event, "prompt", None)
             if not session_id or not prompt:
