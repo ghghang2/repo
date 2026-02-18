@@ -80,7 +80,7 @@ class ChatUI:
         self.session_dropdown = widgets.Dropdown(
             options=options,
             value=self.session_id,
-            description="id",
+            # description="id",
             layout=widgets.Layout(width="100%")
         )
         self.session_dropdown.observe(self._on_session_change, names="value")
@@ -104,7 +104,7 @@ class ChatUI:
                 height="400px",
                 overflow_y="auto",
                 border="1px solid #ccc",
-                padding="5px"  # reduced padding
+                padding="0px"  # reduced padding
             )
         )
 

@@ -35,19 +35,19 @@ import json
 # Background colors for different message types
 BACKGROUND_SYSTEM = "#f5f5f5"        # light gray (optional)
 BACKGROUND_USER = BACKGROUND_SYSTEM          
-BACKGROUND_ASSISTANT = BACKGROUND_SYSTEM   
+BACKGROUND_ASSISTANT = "#B2FFB2"   
 BACKGROUND_REASONING = BACKGROUND_SYSTEM
 BACKGROUND_TOOL = BACKGROUND_SYSTEM
 
 
 # Border colors (currently not used but available for future)
-BORDER_USER = "#bbdefb"
-BORDER_ASSISTANT = "#c8e6c9"
-BORDER_REASONING = "#ffe0b2"
-BORDER_TOOL = "#f8bbd0"
+BORDER_USER = BACKGROUND_SYSTEM
+BORDER_ASSISTANT = BACKGROUND_SYSTEM
+BORDER_REASONING = BACKGROUND_SYSTEM
+BORDER_TOOL = BACKGROUND_SYSTEM
 
 # Border radius variations
-ASSISTANT_FULL_BORDER_RADIUS = "8px"
+ASSISTANT_FULL_BORDER_RADIUS = "0px"
 
 # Text colors (currently default black)
 TEXT_COLOR = "inherit"
@@ -57,9 +57,9 @@ TEXT_COLOR = "inherit"
 # -----------------------------------------------------------------------------
 
 PADDING = "0px"
-BORDER_RADIUS = "5px"
+BORDER_RADIUS = "0px"
 MARGIN = "0"
-MARGIN_BETWEEN_MESSAGES = "2px 0"
+MARGIN_BETWEEN_MESSAGES = "0"
 
 # Special cases
 REASONING_BORDER_RADIUS = "0px"  # reasoning uses 0px in current code
@@ -148,35 +148,56 @@ def wrap_in_div(content: str, style_dict: Dict[str, str], **kwargs) -> str:
 def user_message_html(content: str, prefix: str = "<b>User:</b> ") -> str:
     """Generate HTML for a user message."""
     from nbchat.core.utils import md_to_html
-    styled_content = f"{prefix}{md_to_html(content)}"
+    raw_html = md_to_html(content)
+    # Remove paragraph margins
+    import re
+    styled_content = re.sub(r'<p([^>]*)>', r'<p\1 style="margin:0;">', raw_html)
+    styled_content = f"{prefix}{styled_content}"
     return wrap_in_div(styled_content, user_style_dict())
 
 def assistant_message_html(content: str, prefix: str = "<b>Assistant:</b> ") -> str:
     """Generate HTML for an assistant message."""
     from nbchat.core.utils import md_to_html
-    styled_content = f"{prefix}{md_to_html(content)}"
+    raw_html = md_to_html(content)
+    import re
+    styled_content = re.sub(r'<p([^>]*)>', r'<p\1 style="margin:0;">', raw_html)
+    styled_content = f"{prefix}{styled_content}"
     return wrap_in_div(styled_content, assistant_style_dict())
 
 def reasoning_html(content: str, summary: str = "<b>Reasoning</b>", open: bool = True) -> str:
-    """Generate HTML for a reasoning message with details/summary."""
+    """Generate HTML for a reasoning message with details/summary.
+    The details element is given zero margin and padding to reduce the
+    vertical gap between the summary (the title) and the actual content.
+    """
     from nbchat.core.utils import md_to_html
+    raw_html = md_to_html(content)
+    import re
+    raw_html = re.sub(r'<p([^>]*)>', r'<p\1 style="margin:0;">', raw_html)
     details_open = "open" if open else ""
-    inner = f"<details {details_open}><summary>{summary}</summary>{md_to_html(content)}</details>"
+    # Add inline styles to <details> to tighten spacing.
+    inner = f"<details {details_open} style=\"margin:0; padding:0;\"><summary style=\"margin:0;\">{summary}</summary>{raw_html}</details>"
     return wrap_in_div(inner, reasoning_style_dict())
 
 def reasoning_placeholder_html() -> str:
-    """Generate HTML for an empty reasoning placeholder (with open details)."""
-    # Note: missing closing </details> is intentional - placeholder will be replaced
+    """Generate HTML for an empty reasoning placeholder (with open details).
+    The details element is styled with zero margin/padding for consistency.
+    """
     style = style_dict_to_css(reasoning_style_dict())
-    return f'<div style="{style}"><details open><summary><b>Reasoning</b></summary></div>'
+    return f'<div style="{style}"><details open style="margin:0; padding:0;"><summary style="margin:0;"><b>Reasoning</b></summary></details></div>'
 
 def reasoning_html_with_content(content: str, open: bool = True) -> str:
-    """Generate HTML for reasoning with content (for streaming updates)."""
+    """Generate HTML for reasoning with content (for streaming updates).
+    The details element uses zero margin and padding to keep the title and
+    content closely spaced.
+    """
     from nbchat.core.utils import md_to_html
+    raw_html = md_to_html(content)
+    import re
+    raw_html = re.sub(r'<p([^>]*)>', r'<p\1 style="margin:0;">', raw_html)
     details_open = "open" if open else ""
-    inner = f'''<details {details_open}>
-        <summary><b>Reasoning</b></summary>
-        {md_to_html(content)}</details>'''
+    inner = f'''<details {details_open} style=\"margin:0; padding:0;\">
+        <summary style=\"margin:0;\"><b>Reasoning</b></summary>
+        {raw_html}</details>'''
     return wrap_in_div(inner, reasoning_style_dict())
 
 def assistant_placeholder_html() -> str:
@@ -188,7 +209,10 @@ def assistant_placeholder_html() -> str:
 def assistant_html_with_content(content: str) -> str:
     """Generate HTML for assistant message with content (for streaming updates)."""
     from nbchat.core.utils import md_to_html
-    inner = f'''<b>Assistant:</b> {md_to_html(content)}'''
+    raw_html = md_to_html(content)
+    import re
+    raw_html = re.sub(r'<p([^>]*)>', r'<p\1 style="margin:0;">', raw_html)
+    inner = f'''<b>Assistant:</b> {raw_html}'''
     # Use wrap_in_div to ensure consistent styling
     style = style_dict_to_css(assistant_style_dict())
     return f'<div style="{style}">{inner}</div>'
@@ -198,16 +222,22 @@ def assistant_full_html(reasoning: str, content: str, tool_calls: List[Dict[str,
     from nbchat.core.utils import md_to_html
     html_parts = []
     if reasoning:
-        html_parts.append(f'<details><summary><b>Reasoning</b></summary>{md_to_html(reasoning)}</details>')
+        raw = md_to_html(reasoning)
+        import re
+        raw = re.sub(r'<p([^>]*)>', r'<p\1 style="margin:0;">', raw)
+        html_parts.append(f'<details style=\"margin:0; padding:0;\"><summary style=\"margin:0;\"><b>Reasoning</b></summary>{raw}</details>')
     if tool_calls:
         tool_summary = ", ".join([tc.get("function", {}).get("name", "unknown") for tc in tool_calls])
-        html_parts.append(f'<details><summary>Tool calls: {tool_summary}</summary>')
+        html_parts.append(f'<details style=\"margin:0; padding:0;\"><summary style=\"margin:0;\">Tool calls: {tool_summary}</summary>')
         for tc in tool_calls:
             name = tc.get("function", {}).get("name", "unknown")
             args = tc.get("function", {}).get("arguments", "{}")
             html_parts.append(f'<b>{name}</b>: <code>{args}</code><br>')
         html_parts.append('</details>')
-    html_parts.append(f'<b>Assistant:</b> {md_to_html(content)}')
+    raw = md_to_html(content)
+    import re
+    raw = re.sub(r'<p([^>]*)>', r'<p\1 style="margin:0;">', raw)
+    html_parts.append(f'<b>Assistant:</b> {raw}')
     inner = "".join(html_parts)
     # Note: using assistant_full_style_dict which has border-radius 8px
     style = style_dict_to_css(assistant_full_style_dict())
@@ -219,7 +249,7 @@ def tool_result_html(content: str, tool_name: str = "", preview: str = "") -> st
     if not preview:
         preview = content[:50] + ("..." if len(content) > 50 else "")
     summary = f"<b>Tool result ({tool_name})</b>: {preview}" if tool_name else f"<b>Tool result:</b> {preview}"
-    inner = f"""<details>
+    inner = f"""<details style=\"margin:0; padding:0;\">
         <summary>{summary}</summary>
         <pre style="white-space: pre-wrap; word-wrap: break-word;">{content}</pre>
     </details>"""
@@ -244,7 +274,10 @@ def assistant_message_with_tools_html(
         prefix: HTML prefix for the assistant label.
     """
     from nbchat.core.utils import md_to_html
-    styled_content = f"{prefix}{md_to_html(content)}"
+    raw_html = md_to_html(content)
+    import re
+    raw_html = re.sub(r'<p([^>]*)>', r'<p\1 style="margin:0;">', raw_html)
+    styled_content = f"{prefix}{raw_html}"
     
     if not tool_calls:
         return wrap_in_div(styled_content, assistant_style_dict())
@@ -258,8 +291,7 @@ def assistant_message_with_tools_html(
     details_html = "<br>".join(details_lines)
     
     inner = f"""{styled_content}<br>
-<details>
-    <summary>Tool calls: {tool_summary}</summary>
+<details style=\"margin:0; padding:0;\"><summary style=\"margin:0;\">Tool calls: {tool_summary}</summary>
     {details_html}
 </details>"""
     return wrap_in_div(inner, assistant_style_dict())
@@ -272,10 +304,12 @@ def assistant_message_with_single_tool_html(
 ) -> str:
     """Generate HTML for an assistant message with a single tool call."""
     from nbchat.core.utils import md_to_html
-    styled_content = f"{prefix}{md_to_html(content)}"
+    raw_html = md_to_html(content)
+    import re
+    raw_html = re.sub(r'<p([^>]*)>', r'<p\1 style="margin:0;">', raw_html)
+    styled_content = f"{prefix}{raw_html}"
     inner = f"""{styled_content}<br>
-<details>
-    <summary>Tool call: {tool_name}</summary>
+<details style=\"margin:0; padding:0;\"><summary style=\"margin:0;\">Tool call: {tool_name}</summary>
     Arguments: <code>{tool_args}</code>
 </details>"""
     return wrap_in_div(inner, assistant_style_dict())
@@ -315,7 +349,7 @@ def create_assistant_with_tools_widget(
     """Create an assistant message widget that includes tool calls."""
     return create_html_widget(
         assistant_message_with_tools_html(content, tool_calls),
-        margin="2px 0"
+        margin="0"
     )
 
 def create_assistant_with_single_tool_widget(
@@ -326,5 +360,5 @@ def create_assistant_with_single_tool_widget(
     """Create an assistant message widget with a single tool call."""
     return create_html_widget(
         assistant_message_with_single_tool_html(content, tool_name, tool_args),
-        margin="2px 0"
+        margin="0"
     )
