@@ -151,7 +151,9 @@ def user_message_html(content: str, prefix: str = "<b>User:</b> ") -> str:
     raw_html = md_to_html(content)
     # Remove paragraph margins
     import re
-    styled_content = re.sub(r'<p([^>]*)>', r'<p\1 style="margin:0;">', raw_html)
+    # Convert paragraphs to inline spans to keep title and content on the same line
+    styled_content = re.sub(r'<p([^>]*)>', r'<span\1 style="margin:0;">', raw_html)
+    styled_content = re.sub(r'</p>', r'</span>', styled_content)
     styled_content = f"{prefix}{styled_content}"
     return wrap_in_div(styled_content, user_style_dict())
 
@@ -160,22 +162,25 @@ def assistant_message_html(content: str, prefix: str = "<b>Assistant:</b> ") -> 
     from nbchat.core.utils import md_to_html
     raw_html = md_to_html(content)
     import re
-    styled_content = re.sub(r'<p([^>]*)>', r'<p\1 style="margin:0;">', raw_html)
+    styled_content = re.sub(r'<p([^>]*)>', r'<span\1 style="margin:0;">', raw_html)
+    styled_content = re.sub(r'</p>', r'</span>', styled_content)
     styled_content = f"{prefix}{styled_content}"
     return wrap_in_div(styled_content, assistant_style_dict())
 
 def reasoning_html(content: str, summary: str = "<b>Reasoning</b>", open: bool = True) -> str:
-    """Generate HTML for a reasoning message with details/summary.
-    The details element is given zero margin and padding to reduce the
-    vertical gap between the summary (the title) and the actual content.
+    """Generate HTML for a reasoning message.
+    The reasoning title and the content are placed on the same line by
+    embedding the content directly after the ``<summary>`` tag.  This
+    allows the text to stream inline next to the title instead of
+    starting on a new line.
     """
     from nbchat.core.utils import md_to_html
     raw_html = md_to_html(content)
     import re
     raw_html = re.sub(r'<p([^>]*)>', r'<p\1 style="margin:0;">', raw_html)
     details_open = "open" if open else ""
-    # Add inline styles to <details> to tighten spacing.
-    inner = f"<details {details_open} style=\"margin:0; padding:0;\"><summary style=\"margin:0;\">{summary}</summary>{raw_html}</details>"
+    # Place the content immediately after the summary tag.
+    inner = f"<details {details_open} style=\"margin:0; padding:0;\"><summary style=\"margin:0;\">{summary} {raw_html}</summary></details>"
     return wrap_in_div(inner, reasoning_style_dict())
 
 def reasoning_placeholder_html() -> str:
@@ -187,17 +192,14 @@ def reasoning_placeholder_html() -> str:
 
 def reasoning_html_with_content(content: str, open: bool = True) -> str:
     """Generate HTML for reasoning with content (for streaming updates).
-    The details element uses zero margin and padding to keep the title and
-    content closely spaced.
+    The content is streamed inline next to the title.
     """
     from nbchat.core.utils import md_to_html
     raw_html = md_to_html(content)
     import re
     raw_html = re.sub(r'<p([^>]*)>', r'<p\1 style="margin:0;">', raw_html)
     details_open = "open" if open else ""
-    inner = f'''<details {details_open} style=\"margin:0; padding:0;\">
-        <summary style=\"margin:0;\"><b>Reasoning</b></summary>
-        {raw_html}</details>'''
+    inner = f'''<details {details_open} style=\"margin:0; padding:0;\"><summary style=\"margin:0;\"><b>Reasoning</b> {raw_html}</summary></details>'''
     return wrap_in_div(inner, reasoning_style_dict())
 
 def assistant_placeholder_html() -> str:
