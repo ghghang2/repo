@@ -27,8 +27,8 @@ import psutil
 #  Constants & helpers
 # --------------------------------------------------------------------------- #
 SERVICE_INFO = Path("service_info.json")
-NGROK_LOG = Path("ngrok.log")
-STREAMLIT_LOG = Path("streamlit.log")
+# NGROK_LOG = Path("ngrok.log")
+# STREAMLIT_LOG = Path("streamlit.log")
 LLAMA_LOG = Path("llama_server.log")
 REPO = "ghghang2/llamacpp_t4_v1"          # repo containing the pre‑built binary
 MODEL = "unsloth/gpt-oss-20b-GGUF:F16"   # model used by llama‑server
@@ -87,8 +87,8 @@ def _save_service_info(tunnel_url: str, llama: int, streamlit: int, ngrok: int) 
 def main() -> None:
     """Start all services and record their state."""
     # ---   Validate environment -----------------------------------------
-    if not os.getenv("GITHUB_TOKEN") or not os.getenv("NGROK_TOKEN"):
-        sys.exit("[ERROR] Both GITHUB_TOKEN and NGROK_TOKEN must be set")
+    if not os.getenv("GITHUB_TOKEN"):
+        sys.exit("[ERROR] GITHUB_TOKEN must be set")
 
     # ---  Ensure ports are free ----------------------------------------
     for p in PORTS:
@@ -133,67 +133,67 @@ def main() -> None:
     # flag instructs Playwright to install them automatically.
     _run("playwright install --with-deps firefox", shell=True)
 
-    # --- 6️⃣  Start Streamlit UI ------------------------------------------
-    STREAMLIT_LOG_file = STREAMLIT_LOG.open("w", encoding="utf-8", buffering=1)
-    streamlit_proc = subprocess.Popen(
-        [
-            "streamlit",
-            "run",
-            "app.py",
-            "--server.port",
-            "8002",
-            "--server.headless",
-            "true",
-            "--browser.gatherUsageStats=false",  # Disable Streamlit telemetry for privacy
-        ],
-        stdout=STREAMLIT_LOG_file,
-        stderr=subprocess.STDOUT,
-        start_new_session=True,
-    )
-    print(f"Streamlit started (PID: {streamlit_proc.pid}) – waiting…")
-    if not _wait_for("http://localhost:8002", timeout=30):
-        streamlit_proc.terminate()
-        sys.exit("[ERROR] Streamlit failed to start")
+#     # --- 6️⃣  Start Streamlit UI ------------------------------------------
+#     STREAMLIT_LOG_file = STREAMLIT_LOG.open("w", encoding="utf-8", buffering=1)
+#     streamlit_proc = subprocess.Popen(
+#         [
+#             "streamlit",
+#             "run",
+#             "app.py",
+#             "--server.port",
+#             "8002",
+#             "--server.headless",
+#             "true",
+#             "--browser.gatherUsageStats=false",  # Disable Streamlit telemetry for privacy
+#         ],
+#         stdout=STREAMLIT_LOG_file,
+#         stderr=subprocess.STDOUT,
+#         start_new_session=True,
+#     )
+#     print(f"Streamlit started (PID: {streamlit_proc.pid}) – waiting…")
+#     if not _wait_for("http://localhost:8002", timeout=30):
+#         streamlit_proc.terminate()
+#         sys.exit("[ERROR] Streamlit failed to start")
 
-    # --- Start ngrok tunnel ------------------------------------------
-    NGROK_LOG_file = NGROK_LOG.open("w", encoding="utf-8", buffering=1)
-    ngrok_config = f"""version: 2
-authtoken: {os.getenv('NGROK_TOKEN')}
-tunnels:
-  streamlit:
-    proto: http
-    addr: 8002
-"""
-    Path("ngrok.yml").write_text(ngrok_config)
+#     # --- Start ngrok tunnel ------------------------------------------
+#     NGROK_LOG_file = NGROK_LOG.open("w", encoding="utf-8", buffering=1)
+#     ngrok_config = f"""version: 2
+# authtoken: {os.getenv('NGROK_TOKEN')}
+# tunnels:
+#   streamlit:
+#     proto: http
+#     addr: 8002
+# """
+#     Path("ngrok.yml").write_text(ngrok_config)
 
-    ngrok_proc = subprocess.Popen(
-        ["ngrok", "start", "--all", "--config", "ngrok.yml", "--log", "stdout"],
-        stdout=NGROK_LOG_file,
-        stderr=subprocess.STDOUT,
-        start_new_session=True,
-    )
-    print(f"ngrok started (PID: {ngrok_proc.pid}) – waiting…")
-    if not _wait_for("http://localhost:4040/api/tunnels", timeout=15):
-        ngrok_proc.terminate()
-        sys.exit("[ERROR] ngrok API did not become available")
+#     ngrok_proc = subprocess.Popen(
+#         ["ngrok", "start", "--all", "--config", "ngrok.yml", "--log", "stdout"],
+#         stdout=NGROK_LOG_file,
+#         stderr=subprocess.STDOUT,
+#         start_new_session=True,
+#     )
+#     print(f"ngrok started (PID: {ngrok_proc.pid}) – waiting…")
+#     if not _wait_for("http://localhost:4040/api/tunnels", timeout=15):
+#         ngrok_proc.terminate()
+#         sys.exit("[ERROR] ngrok API did not become available")
 
-    # Grab the public URL
-    try:
-        with urllib.request.urlopen("http://localhost:4040/api/tunnels", timeout=5) as r:
-            tunnels = json.loads(r.read())
-            tunnel_url = next(
-                (t["public_url"] for t in tunnels["tunnels"]
-                 if t["public_url"].startswith("https")),
-                tunnels["tunnels"][0]["public_url"],
-            )
-    except Exception as exc:
-        sys.exit(f"[ERROR] Could not retrieve ngrok URL: {exc}")
+#     # Grab the public URL
+#     try:
+#         with urllib.request.urlopen("http://localhost:4040/api/tunnels", timeout=5) as r:
+#             tunnels = json.loads(r.read())
+#             tunnel_url = next(
+#                 (t["public_url"] for t in tunnels["tunnels"]
+#                  if t["public_url"].startswith("https")),
+#                 tunnels["tunnels"][0]["public_url"],
+#             )
+#     except Exception as exc:
+#         sys.exit(f"[ERROR] Could not retrieve ngrok URL: {exc}")
 
-    print("ngrok tunnel established")
-    print(f"Public URL: {tunnel_url}")
+#     print("ngrok tunnel established")
+#     print(f"Public URL: {tunnel_url}")
 
     # Persist state
-    _save_service_info(tunnel_url, llama_proc.pid, streamlit_proc.pid, ngrok_proc.pid)
+    _save_service_info("tunnel_url", llama_proc.pid, "streamlit_proc.pid", "ngrok_proc.pid")
 
     print("\nALL SERVICES RUNNING SUCCESSFULLY!")
     print("=" * 70)
@@ -218,17 +218,17 @@ def status() -> None:
     print("SERVICE STATUS")
     print("=" * 70)
     print(f"Started at: {info['started_at']}")
-    print(f"Public URL: {info['tunnel_url']}")
+    # print(f"Public URL: {info['tunnel_url']}")
     print(f"llama-server PID: {info['llama_server_pid']}")
-    print(f"Streamlit PID: {info['streamlit_pid']}")
-    print(f"ngrok PID: {info['ngrok_pid']}")
+    # print(f"Streamlit PID: {info['streamlit_pid']}")
+    # print(f"ngrok PID: {info['ngrok_pid']}")
     print("=" * 70)
 
     # Check if processes are alive
     for name, pid in [
         ("llama-server", info["llama_server_pid"]),
-        ("Streamlit", info["streamlit_pid"]),
-        ("ngrok", info["ngrok_pid"]),
+        # ("Streamlit", info["streamlit_pid"]),
+        # ("ngrok", info["ngrok_pid"]),
     ]:
         try:
             os.kill(pid, 0)
@@ -236,24 +236,24 @@ def status() -> None:
         except OSError:
             print(f"{name} is NOT running (PID: {pid})")
 
-    # Verify tunnel
-    print("\nChecking ngrok tunnel status…")
-    try:
-        tunnel_url = _load_service_info()["tunnel_url"]
-        if _wait_for(tunnel_url, timeout=10):
-            print(f"Tunnel is active: {tunnel_url}")
-        else:
-            print("Tunnel is not reachable")
-    except Exception as e:
-        print(f"Tunnel check failed: {e}")
+    # # Verify tunnel
+    # print("\nChecking ngrok tunnel status…")
+    # try:
+    #     tunnel_url = _load_service_info()["tunnel_url"]
+    #     if _wait_for(tunnel_url, timeout=10):
+    #         print(f"Tunnel is active: {tunnel_url}")
+    #     else:
+    #         print("Tunnel is not reachable")
+    # except Exception as e:
+    #     print(f"Tunnel check failed: {e}")
 
-    # Show recent logs
-    for name, log in [("llama-server", LLAMA_LOG), ("Streamlit", STREAMLIT_LOG), ("ngrok", NGROK_LOG)]:
-        print(f"\n--- {name}.log (last 5 lines) ---")
-        if log.exists():
-            print(_run(f"tail -5 {log}", shell=True, capture=True))
-        else:
-            print(f"Log file {log} not found")
+    # # Show recent logs
+    # for name, log in [("llama-server", LLAMA_LOG), ("Streamlit", STREAMLIT_LOG), ("ngrok", NGROK_LOG)]:
+    #     print(f"\n--- {name}.log (last 5 lines) ---")
+    #     if log.exists():
+    #         print(_run(f"tail -5 {log}", shell=True, capture=True))
+    #     else:
+    #         print(f"Log file {log} not found")
 
 def stop() -> None:
     """Terminate all services and clean up."""
@@ -266,8 +266,8 @@ def stop() -> None:
     print("Stopping services…")
     for name, pid in [
         ("llama-server", info["llama_server_pid"]),
-        ("Streamlit", info["streamlit_pid"]),
-        ("ngrok", info["ngrok_pid"]),
+        # ("Streamlit", info["streamlit_pid"]),
+        # ("ngrok", info["ngrok_pid"]),
     ]:
         try:
             # First try a graceful terminate
