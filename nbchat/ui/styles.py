@@ -33,11 +33,12 @@ import json
 # -----------------------------------------------------------------------------
 
 # Background colors for different message types
-BACKGROUND_USER = "#e3f2fd"          # light blue
-BACKGROUND_ASSISTANT = "#f1f8e9"     # light green
-BACKGROUND_REASONING = "#fff3e0"     # light orange
-BACKGROUND_TOOL = "#fce4ec"          # light pink
 BACKGROUND_SYSTEM = "#f5f5f5"        # light gray (optional)
+BACKGROUND_USER = BACKGROUND_SYSTEM          
+BACKGROUND_ASSISTANT = BACKGROUND_SYSTEM   
+BACKGROUND_REASONING = BACKGROUND_SYSTEM
+BACKGROUND_TOOL = BACKGROUND_SYSTEM
+
 
 # Border colors (currently not used but available for future)
 BORDER_USER = "#bbdefb"

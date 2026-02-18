@@ -23,10 +23,10 @@ class ChatUI:
     MAX_TOOL_TURNS = 50
 
     def __init__(self):
-        db = lazy_import("app.db")
+        db = lazy_import("nbchat.core.db")
         db.init_db()
 
-        config = lazy_import("app.config")
+        config = lazy_import("nbchat.core.config")
         self.default_system_prompt = config.DEFAULT_SYSTEM_PROMPT
         self.model_name = config.MODEL_NAME
 
@@ -130,7 +130,7 @@ class ChatUI:
         self.layout = widgets.HBox([sidebar, main])
 
     def _update_tools_list(self):
-        tools = lazy_import("app.tools")
+        tools = lazy_import("nbchat.core.tools")
         tools_list = "<br>".join([tool["function"]["name"] for tool in tools])
         self.tools_output.value = f"<b>Tools</b><br>{tools_list}"
 
@@ -175,7 +175,7 @@ class ChatUI:
     # History management
     # ------------------------------------------------------------------
     def _load_history(self):
-        db = lazy_import("app.db")
+        db = lazy_import("nbchat.core.db")
         rows = db.load_history(self.session_id)
         self.history = [(role, content, "", "", "") for role, content in rows]
         self._render_history()
@@ -243,7 +243,7 @@ class ChatUI:
     def _on_new_chat(self, btn):
         self.session_id = str(uuid.uuid4())
         self.history = []
-        db = lazy_import("app.db")
+        db = lazy_import("nbchat.core.db")
         options = list(db.get_session_ids())
         if self.session_id not in options:
             options.append(self.session_id)
@@ -264,7 +264,7 @@ class ChatUI:
         self.history.append(("user", user_input, "", "", ""))
         # Append user message directly to UI to avoid rebuild snap
         self.chat_history.children = list(self.chat_history.children) + [self._render_user_message(user_input)]
-        db = lazy_import("app.db")
+        db = lazy_import("nbchat.core.db")
         db.log_message(self.session_id, "user", user_input)
         self._process_conversation_turn()
 
@@ -272,8 +272,8 @@ class ChatUI:
     # Core conversation processing (no rebuilds, only appends)
     # ------------------------------------------------------------------
     def _process_conversation_turn(self):
-        client = lazy_import("app.client")
-        tools = lazy_import("app.tools")
+        client = lazy_import("nbchat.core.client")
+        tools = lazy_import("nbchat.core.tools")
 
         messages = self._build_messages_for_api()
         messages = self._strip_reasoning_content(messages)  # New user turn
@@ -288,14 +288,14 @@ class ChatUI:
             # Store reasoning in history and database (UI already updated via placeholder)
             if reasoning:
                 self.history.append(("analysis", reasoning, "", "", ""))
-                db = lazy_import("app.db")
+                db = lazy_import("nbchat.core.db")
                 db.log_message(self.session_id, "analysis", reasoning)
 
             if not tool_calls or finish_reason != "tool_calls":
                 # Final assistant message – store in history (UI already has placeholder with final content)
                 if content:
                     self.history.append(("assistant", content, "", "", ""))
-                    db = lazy_import("app.db")
+                    db = lazy_import("nbchat.core.db")
                     db.log_message(self.session_id, "assistant", content)
                 break
 
@@ -306,7 +306,7 @@ class ChatUI:
                 warning_widget = self._render_assistant_message(warning, "", "", "")
                 self.chat_history.children = list(self.chat_history.children) + [warning_widget]
                 self.history.append(("assistant", warning, "", "", ""))
-                db = lazy_import("app.db")
+                db = lazy_import("nbchat.core.db")
                 db.log_message(self.session_id, "assistant", warning)
                 break
 

@@ -1,15 +1,7 @@
-"""Client wrapper for the Llama OpenAI API.
+from openai import OpenAI
+from .config import SERVER_URL
+import os
 
-This module simply re‑exports :func:`app.client.get_client` under the
-``nbchat.core`` namespace.
-"""
-
-from __future__ import annotations
-
-from typing import Any
-
-from app.client import get_client as _get_client
-
-def get_client() -> Any:
-    """Return an instance of :class:`openai.OpenAI` configured for Llama."""
-    return _get_client()
+def get_client() -> OpenAI:
+    """Return a client that talks to the local OpenAI‑compatible server."""
+    return OpenAI(base_url=f"{SERVER_URL}/v1", api_key="sk-6f4d195dea0242a9b3226c7f296c0c63")

@@ -1,37 +1,124 @@
-"""Database helper wrappers.
+# app/db.py
+"""Persist chat history in a lightweight SQLite database.
 
-The original database logic resides in :mod:`app.db`.  This module
-provides thin wrappers so that the UI and conversation code can
-import from ``nbchat.core.db`` instead.
+The database is created in the repository root as ``chat_history.db``.
+It contains a single table ``chat_log`` which stores every user and
+assistant message together with a session identifier.  The schema is
+minimal but sufficient to reconstruct a conversation on page reload.
 """
 
 from __future__ import annotations
 
-from typing import Any, List, Tuple
+import sqlite3
+from pathlib import Path
+from datetime import datetime
 
-import app.db as _db
+# Location of the database file – one level up from this module
+DB_PATH = Path(__file__).resolve().parent.parent / "chat_history.db"
 
+# Optional in‑memory connection used by tests
+_conn: sqlite3.Connection | None = None
 
-def init_db() -> None:
-    """Initialize the SQLite database if it does not exist."""
-    _db.init_db()
+def _get_conn() -> sqlite3.Connection:
+    if _conn is not None:
+        return _conn
+    return sqlite3.connect(DB_PATH)
+
+# ---------------------------------------------------------------------------
+#  Public helpers
+# ---------------------------------------------------------------------------
+
+def init_db(conn: sqlite3.Connection | None = None) -> None:
+    """Create the database file and the chat_log table if they do not exist.
+
+    The function is idempotent – calling it repeatedly has no adverse
+    effect.  It should be invoked once during application startup.
+    """
+    if conn is None:
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS chat_log (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id  TEXT NOT NULL,
+                role        TEXT NOT NULL,
+                content     TEXT,
+                tool_id     TEXT,
+                tool_name     TEXT,
+                tool_args     TEXT,
+                ts          TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            """
+        )
+        # Optional index – speeds up SELECTs filtered by session_id.
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_session ON chat_log(session_id);")
+        conn.commit()
 
 
 def log_message(session_id: str, role: str, content: str) -> None:
-    """Persist a message to the database."""
-    _db.log_message(session_id, role, content)
+    """Persist a single chat line.
+
+    Parameters
+    ----------
+    session_id
+        Identifier of the chat session – e.g. a user ID or a UUID.
+    role
+        .
+    content
+        The raw text sent or received.
+    """
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            "INSERT INTO chat_log (session_id, role, content) VALUES (?, ?, ?)",
+            (session_id, role, content),
+        )
+        conn.commit()
+
+def log_tool_msg(session_id: str, tool_id: str, tool_name: str, tool_args: str, content: str) -> None:
+    """Persist a single chat line.
+
+    Parameters
+    ----------
+    session_id
+        Identifier of the chat session – e.g. a user ID or a UUID.
+    role
+        .
+    content
+        The raw text sent or received.
+    """
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            "INSERT INTO chat_log (session_id, role, content, tool_id, tool_name, tool_args) VALUES (?, ?, ?, ?, ?, ?)",
+            (session_id, 'assistant', '', tool_id, tool_name, tool_args),
+        )
+        conn.execute(
+            "INSERT INTO chat_log (session_id, role, content, tool_id) VALUES (?, ?, ?, ?)",
+            (session_id, 'tool', content, tool_id),
+        )
+        conn.commit()
 
 
-def log_tool_msg(session_id: str, tool_id: str, tool_name: str, tool_args: str, result: str) -> None:
-    """Persist a tool execution result to the database."""
-    _db.log_tool_msg(session_id, tool_id, tool_name, tool_args, result)
+def load_history(session_id: str, limit: int | None = None) -> list[tuple[str, str]]:
+    """Return the last *limit* chat pairs for the given session.
+
+    The returned list contains tuples of ``(role, content)`` in the order
+    they were inserted.  ``limit`` is applied to the number of rows
+    returned.
+    """
+    rows: list[tuple[str, str]] = []
+    with sqlite3.connect(DB_PATH) as conn:
+        query = "SELECT role, content FROM chat_log WHERE session_id = ? ORDER BY id ASC"
+        params = [session_id]
+        if limit is not None:
+            query += " LIMIT ?"
+            params.append(limit)
+        cur = conn.execute(query, params)
+        rows = cur.fetchall()
+    return rows
 
 
-def load_history(session_id: str) -> List[Tuple[str, str]]:
-    """Return the list of (role, content) tuples for a session."""
-    return _db.load_history(session_id)
-
-
-def get_session_ids() -> List[str]:
-    """Return the list of session identifiers."""
-    return _db.get_session_ids()
+def get_session_ids() -> list[str]:
+    """Return a list of all distinct session identifiers stored in the DB."""
+    with sqlite3.connect(DB_PATH) as conn:
+        cur = conn.execute("SELECT DISTINCT session_id FROM chat_log ORDER BY ts DESC")
+        return [row[0] for row in cur.fetchall()]
