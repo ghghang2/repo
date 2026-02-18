@@ -65,7 +65,7 @@ def md_to_html(text: str) -> str:
 class ChatUI:
     """Chat interface with streaming, reasoning, and safe tool execution."""
 
-    MAX_TOOL_TURNS = 5
+    MAX_TOOL_TURNS = 50
 
     def __init__(self):
         db = lazy_import("app.db")
@@ -108,8 +108,8 @@ class ChatUI:
 
         # Tools list
         self.tools_output = widgets.HTML(
-            value="<b>Available Tools:</b><br>",
-            layout=widgets.Layout(width="100%", border="1px solid lightgray", padding="10px")
+            value="<b>Tools</b><br>",
+            layout=widgets.Layout(width="100%", border="1px solid lightgray", padding="2px")
         )
         self._update_tools_list()
 
@@ -120,7 +120,7 @@ class ChatUI:
         self.session_dropdown = widgets.Dropdown(
             options=options,
             value=self.session_id,
-            description="Session:",
+            description="id",
             layout=widgets.Layout(width="100%")
         )
         self.session_dropdown.observe(self._on_session_change, names="value")
@@ -134,7 +134,7 @@ class ChatUI:
             self.tools_output,
             widgets.HTML("<hr>"),
             self.session_dropdown,
-        ], layout=widgets.Layout(width="25%", border="1px solid black", padding="10px"))
+        ], layout=widgets.Layout(width="15%", border="1px solid lightgray", padding="2px"))
 
         # ----- Main area -----
         self.chat_history = widgets.VBox(
@@ -148,25 +148,28 @@ class ChatUI:
             )
         )
 
-        self.input_text = widgets.Text(
-            placeholder="Enter your message...",
-            layout=widgets.Layout(width="80%")
+        # Use a Textarea instead of Text to enable word wrapping and multiline input.
+        self.input_text = widgets.Textarea(
+            placeholder="...",
+            layout=widgets.Layout(width="90%", height="80px"),
+            rows=2,
+            # The Textarea widget automatically wraps text.
         )
         self.send_btn = widgets.Button(
             description="Send",
             button_style="success",
-            layout=widgets.Layout(width="18%", margin_left="2%")
+            layout=widgets.Layout(width="5%", margin_left="1%")
         )
         self.input_box = widgets.HBox([self.input_text, self.send_btn])
 
-        self.input_text.on_submit(self._on_send)
+        # Textarea does not support on_submit; use the Send button only.
         self.send_btn.on_click(self._on_send)
 
         main = widgets.VBox([
-            widgets.HTML("<h2>Chat</h2>"),
+            widgets.HTML(""),
             self.chat_history,
             self.input_box,
-        ], layout=widgets.Layout(width="75%", padding="10px"))
+        ], layout=widgets.Layout(width="100%", padding="0px"))
 
         # Overall layout
         self.layout = widgets.HBox([sidebar, main])
@@ -174,7 +177,7 @@ class ChatUI:
     def _update_tools_list(self):
         tools = lazy_import("app.tools")
         tools_list = "<br>".join([tool["function"]["name"] for tool in tools])
-        self.tools_output.value = f"<b>Available Tools:</b><br>{tools_list}"
+        self.tools_output.value = f"<b>Tools</b><br>{tools_list}"
 
     # ------------------------------------------------------------------
     # Metrics updater
@@ -201,14 +204,14 @@ class ChatUI:
                                     tps = float(m.group("value"))
                                     break
                         emoji = "🟢" if proc else "⚫"
-                        content = f"<b>Server:</b> {emoji}<br><b>TPS:</b> <code>{tps}</code><br><i>{time.strftime('%H:%M:%S')}</i>"
+                        content = f"<b>Server</b> {emoji}<br><b>TPS:</b> <code>{tps}</code><br><i>{time.strftime('%H:%M:%S')}</i>"
                     else:
                         content = "<i>Log file not found</i>"
                 except Exception as e:
-                    content = f"<i>Error: {e}</i>"
+                    content = f"<i>Error {e}</i>"
 
                 self.metrics_output.value = content
-                time.sleep(2)
+                time.sleep(1)
 
         thread = threading.Thread(target=update_loop, daemon=True)
         thread.start()
@@ -239,7 +242,7 @@ class ChatUI:
                     reasoning = full_msg.get("reasoning_content", "")
                     content = full_msg.get("content", "")
                     tool_calls = full_msg.get("tool_calls", [])
-                    html = f'<div style="background-color: #f1f8e9; padding: 5px; border-radius: 8px; margin: 2px 0;">'
+                    html = f'<div style="background-color: #f1f8e9; padding: 0px; border-radius: 8px; margin: 0;">'
                     if reasoning:
                         html += f'<details><summary><b>Reasoning</b></summary>{md_to_html(reasoning)}</details>'
                     if tool_calls:
@@ -249,7 +252,7 @@ class ChatUI:
                             html += f'<b>{tc["function"]["name"]}</b>: <code>{tc["function"]["arguments"]}</code><br>'
                         html += '</details>'
                     html += f'<b>Assistant:</b> {md_to_html(content)}</div>'
-                    children.append(widgets.HTML(value=html, layout=widgets.Layout(width="100%", margin="2px 0")))
+                    children.append(widgets.HTML(value=html, layout=widgets.Layout(width="100%", margin="0")))
                 except:
                     children.append(self._render_assistant_message(content, "", "", ""))
             elif role == "tool":
@@ -258,21 +261,21 @@ class ChatUI:
 
     def _render_user_message(self, content: str) -> widgets.HTML:
         return widgets.HTML(
-            value=f'<div style="background-color: #e3f2fd; padding: 5px; border-radius: 8px; margin: 2px 0;"><b>User:</b> {md_to_html(content)}</div>',
-            layout=widgets.Layout(width="100%", margin="2px 0")
+            value=f'<div style="background-color: #e3f2fd; padding: 0px; border-radius: 5px; margin: 0;"><b>User:</b> {md_to_html(content)}</div>',
+            layout=widgets.Layout(width="100%", margin="0")
         )
 
     def _render_analysis_message(self, content: str) -> widgets.HTML:
         return widgets.HTML(
             value=f'''
-            <div style="background-color: #fff3e0; padding: 5px; border-radius: 8px; margin: 2px 0;">
+            <div style="background-color: #fff3e0; padding: 0px; border-radius: 0px; margin: 0;">
                 <details open>
                     <summary><b>Reasoning</b></summary>
                     {md_to_html(content)}
                 </details>
             </div>
             ''',
-            layout=widgets.Layout(width="100%", margin="2px 0")
+            layout=widgets.Layout(width="100%", margin="0")
         )
 
     def _render_assistant_message(self, content: str, tool_id: str, tool_name: str, tool_args: str) -> widgets.HTML:
@@ -282,7 +285,7 @@ class ChatUI:
                 tool_summary = ", ".join([tc.get("name", "unknown") for tc in tool_calls])
                 details = "<br>".join([f"<b>{tc.get('name')}</b>: <code>{tc.get('args', {})}</code>" for tc in tool_calls])
                 html = f'''
-                <div style="background-color: #f1f8e9; padding: 5px; border-radius: 8px; margin: 2px 0;">
+                <div style="background-color: #f1f8e9; padding: 0px; border-radius: 5px; margin: 0;">
                     <b>Assistant:</b> {md_to_html(content)}<br>
                     <details>
                         <summary>Tool calls: {tool_summary}</summary>
@@ -291,10 +294,10 @@ class ChatUI:
                 </div>
                 '''
             except:
-                html = f'<div style="background-color: #f1f8e9; padding: 5px; border-radius: 8px; margin: 2px 0;"><b>Assistant:</b> {md_to_html(content)}</div>'
+                html = f'<div style="background-color: #f1f8e9; padding: 0px; border-radius: 5px; margin: 0;"><b>Assistant:</b> {md_to_html(content)}</div>'
         elif tool_id:
             html = f'''
-            <div style="background-color: #f1f8e9; padding: 5px; border-radius: 8px; margin: 2px 0;">
+            <div style="background-color: #f1f8e9; padding: 0px; border-radius: 5px; margin: 0;">
                 <b>Assistant:</b> {md_to_html(content)}<br>
                 <details>
                     <summary>Tool call: {tool_name}</summary>
@@ -303,21 +306,21 @@ class ChatUI:
             </div>
             '''
         else:
-            html = f'<div style="background-color: #f1f8e9; padding: 5px; border-radius: 8px; margin: 2px 0;"><b>Assistant:</b> {md_to_html(content)}</div>'
+            html = f'<div style="background-color: #f1f8e9; padding: 0px; border-radius: 5px; margin: 0;"><b>Assistant:</b> {md_to_html(content)}</div>'
         return widgets.HTML(value=html, layout=widgets.Layout(width="100%", margin="2px 0"))
 
     def _render_tool_message(self, content: str, tool_id: str, tool_name: str, tool_args: str) -> widgets.HTML:
         preview = content[:50] + ("..." if len(content) > 50 else "")
         return widgets.HTML(
             value=f'''
-            <div style="background-color: #fce4ec; padding: 5px; border-radius: 8px; margin: 2px 0;">
+            <div style="background-color: #fce4ec; padding: 0px; border-radius: 5px; margin: 0;">
                 <details>
                     <summary><b>Tool result ({tool_name})</b>: {preview}</summary>
                     <pre style="white-space: pre-wrap; word-wrap: break-word;">{content}</pre>
                 </details>
             </div>
             ''',
-            layout=widgets.Layout(width="100%", margin="2px 0")
+            layout=widgets.Layout(width="100%", margin="0")
         )
 
     # ------------------------------------------------------------------
@@ -480,13 +483,13 @@ class ChatUI:
             if hasattr(delta, "reasoning_content") and delta.reasoning_content:
                 if reasoning_placeholder is None:
                     reasoning_placeholder = widgets.HTML(
-                        value='<div style="background-color: #fff3e0; padding: 5px; border-radius: 8px; margin: 2px 0;"><details open><summary><b>Reasoning</b></summary></div>',
-                        layout=widgets.Layout(width="100%", margin="2px 0")
+                        value='<div style="background-color: #fff3e0; padding: 0px; border-radius: 5px; margin: 0;"><details open><summary><b>Reasoning</b></summary></div>',
+                        layout=widgets.Layout(width="100%", margin="0")
                     )
                     self.chat_history.children = list(self.chat_history.children) + [reasoning_placeholder]
                 reasoning_accum += delta.reasoning_content
                 reasoning_placeholder.value = f'''
-                <div style="background-color: #fff3e0; padding: 5px; border-radius: 8px; margin: 2px 0;">
+                <div style="background-color: #fff3e0; padding: 0px; border-radius: 5px; margin: 0;">
                     <details open>
                         <summary><b>Reasoning</b></summary>
                         {md_to_html(reasoning_accum)}
@@ -498,8 +501,8 @@ class ChatUI:
             if delta.content:
                 if assistant_placeholder is None:
                     assistant_placeholder = widgets.HTML(
-                        value='<div style="background-color: #f1f8e9; padding: 5px; border-radius: 8px; margin: 2px 0;"><b>Assistant:</b> </div>',
-                        layout=widgets.Layout(width="100%", margin="2px 0")
+                        value='<div style="background-color: #f1f8e9; padding: 0px; border-radius: 5px; margin: 0;"><b>Assistant:</b> </div>',
+                        layout=widgets.Layout(width="100%", margin="0")
                     )
                     # Insert after reasoning if it exists
                     children = list(self.chat_history.children)
@@ -511,7 +514,7 @@ class ChatUI:
                     self.chat_history.children = children
                 content_accum += delta.content
                 assistant_placeholder.value = f'''
-                <div style="background-color: #f1f8e9; padding: 5px; border-radius: 8px; margin: 2px 0;">
+                <div style="background-color: #f1f8e9; padding: 0px; border-radius: 5px; margin: 0;">
                     <b>Assistant:</b> {md_to_html(content_accum)}
                 </div>
                 '''
