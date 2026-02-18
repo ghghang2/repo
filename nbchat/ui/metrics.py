@@ -6,7 +6,7 @@ original logic.  This module can later be extended to provide a fully
 independent implementation.
 """
 
-from nbchat_v2 import ChatUI
+from nbchat.ui.chatui import ChatUI
 
 def start_metrics_updater(metrics_output_widget):
     """Start the background thread that updates *metrics_output_widget*.

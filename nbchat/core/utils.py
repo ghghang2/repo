@@ -31,22 +31,22 @@ def lazy_import(module_name: str):
     global _client, _tools, _db_module, _config_module
     if module_name == "app.client":
         if _client is None:
-            from app.client import get_client
+            from nbchat.core.client import get_client
             _client = get_client
         return _client()
     elif module_name == "app.tools":
         if _tools is None:
-            from app.tools import get_tools
+            from nbchat.core.tools import get_tools
             _tools = get_tools
         return _tools()
     elif module_name == "app.db":
         if _db_module is None:
-            import app.db as db_module
+            import nbchat.core.db as db_module
             _db_module = db_module
         return _db_module
     elif module_name == "app.config":
         if _config_module is None:
-            import app.config as config_module
+            import nbchat.core.config as config_module
             _config_module = config_module
         return _config_module
     else:

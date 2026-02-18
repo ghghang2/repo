@@ -14,6 +14,7 @@ from typing import Callable, Dict, List
 # simply import the helpers and expose them under the new module name.
 from app.tools import get_tools as _get_tools
 from app.tools import TOOLS as _TOOLS
+TOOLS = _TOOLS
 
 def get_tools() -> List[Dict]:
     """Return the list of OpenAI function tools.
