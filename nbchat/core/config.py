@@ -57,7 +57,7 @@ IGNORED_ITEMS = [
 # --------------------------------------------------------------------------- #
 #  Context compaction defaults
 # --------------------------------------------------------------------------- #
-CONTEXT_TOKEN_THRESHOLD = 7000
+CONTEXT_TOKEN_THRESHOLD = 4000
 TAIL_MESSAGES = 10
 SUMMARY_PROMPT = (
     "We need to compact the chat history up to this point to save token space. In the most compact way possible, summarize the conversation so far, focusing on key results and guidance for next steps, if any."

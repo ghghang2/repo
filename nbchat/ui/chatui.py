@@ -202,7 +202,7 @@ class ChatUI:
     def _maybe_compact(self, messages=None):
         """Fire off async compaction if threshold exceeded. Does not block."""
         if not self.history:
-            return
+            return False
         if self.compaction_engine.should_compact(self.history):
             # Cancel any previous pending compaction before submitting a new one
             if self.compaction_engine._pending and not self.compaction_engine._pending.done():
@@ -212,6 +212,8 @@ class ChatUI:
             self.compaction_engine._pending = self.compaction_engine._executor.submit(
                 self.compaction_engine.compact_history, history_snapshot
             )
+            return True
+        return False
     
     def _drain_compaction(self, messages):
         """Call at the start of each turn to apply any pending compaction."""
@@ -343,8 +345,9 @@ class ChatUI:
                 self.history.append(("tool", result, tc["id"], tool_name, tool_args))
                 db.log_tool_msg(self.session_id, tc["id"], tool_name, tool_args, result)
                 messages.append({"role": "tool", "tool_call_id": tc["id"], "content": result})
-                self._maybe_compact(messages)
-                self._render_history()
+                compacted = self._maybe_compact(messages)
+                if not compacted: 
+                    self._append(renderer.render_tool(result, tool_name, tool_args))
 
     def _stream_response(self, client, tools, messages):
         reasoning_widget = None
