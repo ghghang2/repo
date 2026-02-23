@@ -19,6 +19,7 @@ from nbchat.ui.styles import (
     assistant_message_with_tools_html,
     assistant_full_html,
     system_message_html,
+    compacted_summary_html,
 )
 
 __all__ = [
@@ -30,6 +31,8 @@ __all__ = [
     "render_assistant_full",
     "render_system",
     "render_placeholder",
+    "render_compacted_summary",
+    "render_compacted_summary",
 ]
 
 
@@ -65,3 +68,6 @@ def render_placeholder(role: str) -> widgets.HTML:
     if role == "reasoning":
         return render_reasoning("")
     raise ValueError(f"Unknown placeholder role: {role!r}")
+
+def render_compacted_summary(content: str) -> widgets.HTML:
+    return make_widget(compacted_summary_html(content))

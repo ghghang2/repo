@@ -1,5 +1,4 @@
 # Automatic Context Compaction Plan (Simplified Minimalist)
-
 ## 1. Overview
 
 Automatic Context Compaction reduces chat conversation size when accumulated tokens exceed a threshold. The goal is to stay within the model's context window while preserving the information needed for the agent to continue its task.

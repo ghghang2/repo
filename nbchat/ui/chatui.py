@@ -195,21 +195,22 @@ class ChatUI:
                 children.append(renderer.render_tool(content, tool_name, tool_args))
             elif role == "system":
                 children.append(renderer.render_system(content))
+            elif role == "compacted":
+                children.append(renderer.render_compacted_summary(content))
         self.chat_history.children = children
 
     def _maybe_compact(self, messages=None):
-        """Compact history if token threshold exceeded.
-        
-        If `messages` is provided (a list), it will be rebuilt to reflect
-        the compacted history.
-        """
         if not self.history:
             return
         if self.compaction_engine.should_compact(self.history):
             try:
+                db = lazy_import("nbchat.core.db")
                 new_history = self.compaction_engine.compact_history(self.history)
                 self.history = new_history
                 self._render_history()
+                # Log the compacted summary so it survives reload
+                summary_role, summary_content = new_history[0][0], new_history[0][1]
+                db.replace_session_history(self.session_id, new_history)
                 if messages is not None:
                     messages.clear()
                     messages.extend(chat_builder.build_messages(self.history, self.system_prompt))
@@ -264,6 +265,7 @@ class ChatUI:
         with self._history_lock:
             # Stop an existing stream if it is running.
             if self._stream_thread and self._stream_thread.is_alive():
+                # Signal the streaming thread to stop.
                 self._stop_streaming = True
                 # Release the lock while we wait for the thread to finish.
                 # The thread itself checks the flag and exits.

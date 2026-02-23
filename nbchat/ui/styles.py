@@ -145,5 +145,13 @@ def system_message_html(content: str) -> str:
 # Widget factory
 # ---------------------------------------------------------------------------
 
+def compacted_summary_html(content: str) -> str:
+    inner = (
+        f'<details style="margin:0;padding:0;">'
+        f'<summary style="margin:0;display:block;"><b>🗜️ Compacted earlier conversation</b></summary>'
+        f'<div>{_md(content)}</div></details>'
+    )
+    return _div(inner, BACKGROUND_LIGHT)
+    
 def make_widget(html_str: str) -> widgets.HTML:
     return widgets.HTML(value=html_str, layout=widgets.Layout(width="100%", margin="0"))

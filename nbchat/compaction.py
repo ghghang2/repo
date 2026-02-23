@@ -94,7 +94,7 @@ class CompactionEngine:
         
         # New history: summary (as system message) + tail
         # Use role "system" for API compatibility
-        return [("system", summary_text, "", "", "")] + tail
+        return [("compacted", summary_text, "", "", "")] + tail
 
 
 # For convenience

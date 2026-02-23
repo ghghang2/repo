@@ -124,3 +124,13 @@ def get_session_ids() -> list[str]:
     with sqlite3.connect(DB_PATH) as conn:
         cur = conn.execute("SELECT DISTINCT session_id FROM chat_log ORDER BY ts DESC")
         return [row[0] for row in cur.fetchall()]
+
+def replace_session_history(session_id: str, history: list[tuple[str, str, str, str, str]]) -> None:
+    """Replace all rows for a session with the compacted history."""
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute("DELETE FROM chat_log WHERE session_id = ?", (session_id,))
+        conn.executemany(
+            "INSERT INTO chat_log (session_id, role, content, tool_id, tool_name, tool_args) VALUES (?, ?, ?, ?, ?, ?)",
+            [(session_id, r, c, tid, tname, targs) for r, c, tid, tname, targs in history],
+        )
+        conn.commit()
