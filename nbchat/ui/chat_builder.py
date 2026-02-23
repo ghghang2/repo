@@ -49,6 +49,8 @@ def build_messages(history: List[Tuple[str, str, str, str, str]], system_prompt:
                 messages.append(full_msg)
             except Exception:
                 messages.append({"role": "assistant", "content": content})
+        elif role == "system":
+            messages.append({"role": "system", "content": content})
         elif role == "tool":
             messages.append({
                 "role": "tool",

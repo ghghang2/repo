@@ -14,6 +14,7 @@ from IPython.display import display
 from nbchat.ui import chat_renderer as renderer
 from nbchat.ui import tool_executor as executor
 from nbchat.ui import chat_builder
+from nbchat.compaction import CompactionEngine
 from nbchat.ui.utils import changed_files
 from nbchat.core.utils import lazy_import
 
@@ -30,6 +31,13 @@ class ChatUI:
         config = lazy_import("nbchat.core.config")
         self.system_prompt = config.DEFAULT_SYSTEM_PROMPT
         self.model_name = config.MODEL_NAME
+        self.compaction_engine = CompactionEngine(
+            threshold=config.CONTEXT_TOKEN_THRESHOLD,
+            tail_messages=config.TAIL_MESSAGES,
+            summary_prompt=config.SUMMARY_PROMPT,
+            summary_model=config.MODEL_NAME,
+            system_prompt=self.system_prompt,
+        )
         self.session_id = str(uuid.uuid4())
         # (role, content, tool_id, tool_name, tool_args)
         self.history: List[Tuple[str, str, str, str, str]] = []
@@ -185,7 +193,29 @@ class ChatUI:
                     children.append(renderer.render_assistant(content))
             elif role == "tool":
                 children.append(renderer.render_tool(content, tool_name, tool_args))
+            elif role == "system":
+                children.append(renderer.render_system(content))
         self.chat_history.children = children
+
+    def _maybe_compact(self, messages=None):
+        """Compact history if token threshold exceeded.
+        
+        If `messages` is provided (a list), it will be rebuilt to reflect
+        the compacted history.
+        """
+        if not self.history:
+            return
+        if self.compaction_engine.should_compact(self.history):
+            try:
+                new_history = self.compaction_engine.compact_history(self.history)
+                self.history = new_history
+                self._render_history()
+                if messages is not None:
+                    messages.clear()
+                    messages.extend(chat_builder.build_messages(self.history, self.system_prompt))
+            except Exception as e:
+                import sys
+                print(f"Compaction failed: {e}", file=sys.stderr)
 
     def _widget_for_assistant(self, content: str, tool_id: str, tool_args: str) -> widgets.HTML:
         if tool_id == "multiple":
@@ -242,6 +272,7 @@ class ChatUI:
             # Append the new user message.
             self.history.append(("user", user_input, "", "", ""))
             self._append(renderer.render_user(user_input))
+            self._maybe_compact()
             db.log_message(self.session_id, "user", user_input)
 
             # Clear the input box after logging.
@@ -272,11 +303,13 @@ class ChatUI:
 
             if reasoning:
                 self.history.append(("analysis", reasoning, "", "", ""))
+                self._maybe_compact()
                 db.log_message(self.session_id, "analysis", reasoning)
 
             if not tool_calls or finish_reason != "tool_calls":
                 if content:
                     self.history.append(("assistant", content, "", "", ""))
+                    self._maybe_compact()
                     db.log_message(self.session_id, "assistant", content)
                 break
 
@@ -291,6 +324,7 @@ class ChatUI:
                         "reasoning_content": reasoning, "tool_calls": tool_calls}
             messages.append(full_msg)
             self.history.append(("assistant_full", "", "full", "full", json.dumps(full_msg)))
+            self._maybe_compact()
             db.log_message(self.session_id, "assistant", content)
 
             for tc in tool_calls:
@@ -298,6 +332,7 @@ class ChatUI:
                 tool_args = tc["function"]["arguments"]
                 result = executor.run_tool(tool_name, tool_args)
                 self.history.append(("tool", result, tc["id"], tool_name, tool_args))
+                self._maybe_compact()
                 db.log_tool_msg(self.session_id, tc["id"], tool_name, tool_args, result)
                 self._append(renderer.render_tool(result, tool_name, tool_args))
                 messages.append({"role": "tool", "tool_call_id": tc["id"], "content": result})
