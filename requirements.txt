@@ -1,15 +1,8 @@
 playwright
-requests
-uvicorn
-httpx
 openai
-streamlit
 gitpython
 pygithub
-flask
-fastapi
-pytest
-pyngrok
 markdown
 ipywidgets
 IPython
+pytest

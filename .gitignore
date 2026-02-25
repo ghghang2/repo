@@ -6,3 +6,8 @@ __pycache__
 *.yml
 *.json
 *.out
+*.db
+*.sqlite
+*.sqlite3
+.env
+.env.local

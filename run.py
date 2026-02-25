@@ -32,7 +32,7 @@ REPO          = "ghghang2/llamacpp_t4_v1"
 MODEL         = "unsloth/gpt-oss-20b-GGUF:Q5_K_M"
 PORT          = 8000
 N_PARALLEL    = 2      # matches 1-2 simultaneous users; fewer slots = faster per-request TPS
-CTX_SIZE      = 16384   # tokens per slot; total KV mem = CTX_SIZE * N_PARALLEL. raise only if prompts need it
+CTX_SIZE      = 49152  # tokens per slot; total KV mem ≈ CTX_SIZE * N_PARALLEL * layers. 32K fits within T4 headroom at Q4_K_M + N_PARALLEL=2
 N_GPU_LAYERS  = 999    # offload all layers to GPU (llama.cpp clamps to actual layer count)
 
 
@@ -144,6 +144,9 @@ def main() -> None:
     _run("sudo apt-get update -qq")
     _run("sudo apt-get install -y libxcomposite1 libgtk-3-0 libatk1.0-0")
     _run("playwright install --with-deps firefox")
+
+    # Install pre-commit for guarding against git secrets
+    _run("pre-commit install")
 
     _save_service_info(llama_proc.pid)
     print("\nALL SERVICES RUNNING SUCCESSFULLY!")
