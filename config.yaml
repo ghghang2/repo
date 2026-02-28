@@ -1,0 +1,37 @@
+# Default configuration for RSI search pipeline
+# Adjust values as needed for your environment
+
+# Search engine settings
+search:
+  engine: duckduckgo  # Options: duckduckgo, google
+  max_results: 10
+
+# Harvester settings
+harvest:
+  arxiv:
+    enabled: true
+  semanticscholar:
+    enabled: true
+  crossref:
+    enabled: true
+  patents:
+    enabled: true
+  gitlab:
+    enabled: true
+  bitbucket:
+    enabled: true
+
+# Storage settings
+storage:
+  results_dir: results
+  schema_version: 1.0
+
+# Logging
+logging:
+  level: INFO
+  file: logs/rsi_search.log
+
+# API keys / credentials (if required)
+# api_keys:
+#   google_api_key: "YOUR_KEY"
+#   patent_api_key: "YOUR_KEY"
