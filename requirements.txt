@@ -1,9 +1,4 @@
-playwright
-openai
-gitpython
-pygithub
-markdown
-ipywidgets
-IPython
-pytest
-psutil
+requests
+beautifulsoup4
+pyyaml
+tqdm
