@@ -50,11 +50,12 @@ def harvest_arxiv(url_or_id: str) -> dict:
     entry = feed.entries[0]
     # ``feedparser`` returns ``entry.authors`` as a list of dicts with a ``name`` key.
     if hasattr(entry, "authors"):
-        authors = ", ".join([a.get("name", "") for a in entry.authors])
+        # In feedparser, authors are objects with a ``name`` attribute
+        authors = ", ".join([getattr(a, "name", "") for a in entry.authors])
     else:
         authors = ""
     # ``entry.links`` is a list of dicts; filter for PDF type.
-    pdf_url = next((link.get("href", "") for link in entry.links if link.get("type") == "application/pdf"), "")
+    pdf_url = next((link.href for link in entry.links if getattr(link, "type", "") == "application/pdf"), "")
     return {
         "id": paper_id,
         "title": entry.title,
