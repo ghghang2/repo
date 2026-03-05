@@ -17,7 +17,7 @@ from github import Github
 from github.Auth import Token
 from github.Repository import Repository
 
-from nbchat.core.config import USER_NAME, REPO_NAME, IGNORED_ITEMS
+from .config import USER_NAME, REPO_NAME, IGNORED_ITEMS
 
 log = logging.getLogger(__name__)
 

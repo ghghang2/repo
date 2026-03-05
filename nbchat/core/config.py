@@ -41,8 +41,27 @@ DEFAULT_SYSTEM_PROMPT = f'''You are a helpful assistant with the singular goal o
 # --------------------------------------------------------------------------- #
 #  GitHub repository details
 # --------------------------------------------------------------------------- #
-USER_NAME = "ghghang2"
-REPO_NAME = "v1.3"
+# Load repository configuration from repo_config.yaml if present
+import os
+try:
+    import yaml
+except ImportError:
+    yaml = None
+
+_config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "repo_config.yaml")
+if os.path.exists(_config_path):
+    try:
+        with open(_config_path, "r", encoding="utf-8") as f:
+            cfg = yaml.safe_load(f) if yaml else {}
+        USER_NAME = cfg.get("user_name", "ghghang2")
+        REPO_NAME = cfg.get("repo_name", "v1.4")
+    except Exception as e:
+        USER_NAME = "ghghang2"
+        REPO_NAME = "v1.4"
+        print(f"[WARNING] Failed to load repo_config.yaml: {e}")
+else:
+    USER_NAME = "ghghang2"
+    REPO_NAME = "v1.4"
 
 # --------------------------------------------------------------------------- #
 #  Items to ignore in the repo

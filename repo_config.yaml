@@ -1,0 +1,4 @@
+# Repository configuration for nbchat
+# Update these values when you want to change the target GitHub repo.
+user_name: ghghang2
+repo_name: v1.4
