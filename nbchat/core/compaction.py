@@ -361,8 +361,7 @@ class CompactionEngine:
             if not messages[-1].get("content"):
                 messages.pop()
 
-        messages.append({"role": "user", "content": "we are running out of context window"})
-        messages.append({"role": "assistant", "content": self.summary_prompt})
+        messages.append({"role": "user", "content": self.summary_prompt})
 
         print(
             f"[compaction] sending {len(messages)} messages to summariser",

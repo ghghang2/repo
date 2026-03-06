@@ -107,11 +107,11 @@ IGNORED_ITEMS = [
 # --------------------------------------------------------------------------- #
 
 SUMMARY_PROMPT = (
-            "As the helpful assistant, I need to summarize the conversation history thus far in a more compact form for use as context later. I have to:\n"
+            "Summarize the conversation history thus far in a more compact form for use as context later:\n"
             "Restating the user requests so the conversation stays on track\n"
             "List major assistant outputs and work progress that progresses toward resolving user requests\n"
             "List all tool calls and tool outputs (summarize succinctly if output too large).\n"
             "Summarize all tool call failures, note the failure reasons.\n"
             "Answer the questions where the conversation history leaves off at? What are next steps are?\n"
-            "I must preserve essential context to ensure user requests are satisfied."
+            "Must preserve essential context to ensure user requests are satisfied."
         )
