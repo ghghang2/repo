@@ -6,23 +6,24 @@ summarising the oldest portion of the conversation.
 
 Key design decisions
 --------------------
-* History is never mutated with a ``compacted`` row.  Instead, the summary
-  lives in ``context_summary`` on the engine and is injected into the system
-  prompt by ``chat_builder.build_messages``.  This keeps the stored history
-  append-only and makes the split logic much simpler.
+* History is never mutated with a ``compacted`` row.  The summary lives in
+  ``context_summary`` on the engine and is injected into the system prompt by
+  ``chat_builder.build_messages``.
 
-* Splitting is turn-aware.  History is first grouped into logical *turns*
-  (each starting with a ``user`` row).  Compaction drops whole turns from the
-  front, so we never accidentally split an ``assistant_full`` / ``tool`` /
-  ``analysis`` triplet.
+* Splitting is turn-aware.  History is grouped into logical *turns* (each
+  starting with a ``user`` row).  Compaction drops whole turns from the front
+  so we never accidentally split an ``assistant_full`` / ``tool`` / ``analysis``
+  triplet.
 
-* For pathological cases where a single turn exceeds the threshold on its own
-  (very long agentic loops), ``_find_safe_split`` scans forward within the
-  turn for the first row whose role cannot be a structural *dependent* of the
-  row before it.  This is a last resort — whole-turn dropping is always
-  preferred.
+* Oversized tool results are truncated in-place rather than being silently
+  dropped.  A single large tool output (e.g. a full file read) used to cause
+  total amnesia because _safe_tail would walk off the end of the list.
 
-* Successive compactions are cumulative: the previous ``context_summary`` is
+* _safe_tail never returns an empty list.  It falls back progressively:
+  forward-nudge -> nearest user row -> full history.  Losing some token budget
+  is always better than total forgetfulness.
+
+* Successive compactions are cumulative: the previous context_summary is
   fed to the summariser so the new summary folds it in without an extra API
   call.
 """
@@ -35,32 +36,11 @@ from typing import List, Tuple, Optional
 from nbchat.ui.chat_builder import build_messages
 from .client import get_client
 
-# Type alias for readability
 _Row = Tuple[str, str, str, str, str]
-
-# Roles that must never begin a tail slice because they depend on a preceding
-# assistant_full (or analysis) row to be structurally valid.
 _DEPENDENT_ROLES = {"tool", "analysis", "assistant_full"}
 
 
 class CompactionEngine:
-    """Lightweight engine for keeping chat history within token limits.
-
-    Parameters
-    ----------
-    threshold:
-        Maximum token budget.  Compaction is triggered at 75 % of this value.
-    tail_messages:
-        Minimum number of history *rows* to keep verbatim (used as a floor
-        when no turn boundary can be found).
-    summary_prompt:
-        The text the engine sends to the model as the *assistant* turn that
-        starts the summary.  The model is expected to continue/complete it.
-    summary_model:
-        Model identifier used for summarisation.
-    system_prompt:
-        System prompt forwarded to the summariser for full context.
-    """
 
     def __init__(
         self,
@@ -75,12 +55,7 @@ class CompactionEngine:
         self.summary_prompt = summary_prompt
         self.summary_model = summary_model
         self.system_prompt = system_prompt
-
-        # The rolling summary produced by previous compactions.
-        # Injected into the system prompt via build_messages; never stored as
-        # a history row.
         self.context_summary: str = ""
-
         self._cache: dict = {}
         self._cache_lock = threading.Lock()
 
@@ -92,7 +67,6 @@ class CompactionEngine:
         return max(1, len(text) // 3)
 
     def total_tokens(self, history: List[_Row]) -> int:
-        """Approximate token count across all history rows."""
         total = 0
         for role, content, tool_id, tool_name, tool_args in history:
             key = hash((content, tool_args))
@@ -110,7 +84,6 @@ class CompactionEngine:
         return total
 
     def should_compact(self, history: List[_Row]) -> bool:
-        """Return True when the history is approaching the token threshold."""
         tokens = self.total_tokens(history)
         trigger = int(self.threshold * 0.75)
         print(
@@ -126,12 +99,6 @@ class CompactionEngine:
 
     @staticmethod
     def _group_into_turns(history: List[_Row]) -> List[List[_Row]]:
-        """Split history into logical turns, each beginning with a user row.
-
-        Any rows that appear before the first ``user`` row (e.g. a legacy
-        ``compacted`` row) are bundled into their own leading group so they
-        are never silently dropped.
-        """
         turns: List[List[_Row]] = []
         current: List[_Row] = []
         for row in history:
@@ -144,21 +111,106 @@ class CompactionEngine:
         return turns
 
     # ------------------------------------------------------------------
-    # Intra-group safe split (last resort for oversized agentic turns)
+    # Safe tail — never returns empty
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _safe_tail(history: List[_Row], n: int) -> List[_Row]:
+        """Return the last n rows starting at a safe boundary.
+
+        Priority:
+        1. Walk forward from tail_start past dependent roles.
+        2. If that exhausts the list, walk backward to nearest user row.
+        3. If no user row found, return full history.
+
+        Never returns an empty list — losing token budget beats total amnesia.
+        """
+        if not history or n <= 0:
+            return history
+
+        tail_start = max(0, len(history) - n)
+
+        # Walk forward past dependent roles.
+        probe = tail_start
+        while probe < len(history) and history[probe][0] in _DEPENDENT_ROLES:
+            probe += 1
+
+        if probe < len(history):
+            return history[probe:]
+
+        # Forward walk exhausted — fall back to nearest user boundary.
+        probe = len(history) - 1
+        while probe > 0 and history[probe][0] != "user":
+            probe -= 1
+
+        if history[probe][0] == "user":
+            print(
+                f"[compaction] _safe_tail: fell back to user boundary at index {probe}",
+                file=sys.stderr,
+            )
+            return history[probe:]
+
+        print(
+            "[compaction] _safe_tail: no user boundary found, returning full history",
+            file=sys.stderr,
+        )
+        return history
+
+    # ------------------------------------------------------------------
+    # Tool result truncation
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _truncate_tool_results(rows: List[_Row], budget: int) -> List[_Row]:
+        """Truncate oversized tool result content so rows fit within budget.
+
+        Largest tool results are trimmed first.  A truncation notice is
+        appended so the model knows output was cut.  Non-tool rows are never
+        modified.
+        """
+        def est(text: str) -> int:
+            return max(1, len(text) // 3)
+
+        result = list(rows)
+        total = sum(est(r[1]) + (est(r[4]) if r[4] else 0) for r in result)
+
+        if total <= budget:
+            return result
+
+        tool_indices = sorted(
+            [i for i, r in enumerate(result) if r[0] == "tool"],
+            key=lambda i: len(result[i][1]),
+            reverse=True,
+        )
+
+        for idx in tool_indices:
+            if total <= budget:
+                break
+            role, content, tid, tname, targs = result[idx]
+            excess_chars = (total - budget) * 3
+            keep = max(200, len(content) - excess_chars)
+            notice = (
+                f"\n[...output truncated from {len(content)} to {keep} chars"
+                f" to fit context window...]"
+            )
+            new_content = content[:keep] + notice
+            saved = est(content) - est(new_content)
+            result[idx] = (role, new_content, tid, tname, targs)
+            total -= saved
+            print(
+                f"[compaction] truncated tool result '{tname}'"
+                f" {len(content)} -> {len(new_content)} chars",
+                file=sys.stderr,
+            )
+
+        return result
+
+    # ------------------------------------------------------------------
+    # Intra-turn safe split
     # ------------------------------------------------------------------
 
     @staticmethod
     def _find_safe_split(group: List[_Row]) -> Optional[int]:
-        """Return the earliest index *i* inside *group* such that
-        ``group[i:]`` is structurally self-contained.
-
-        A position is safe when ``group[i]`` is not a dependent role AND
-        ``group[i-1]`` is not ``assistant_full`` (which must be followed by
-        its tool results before the chain is complete).
-
-        Returns ``None`` if no safe split exists (caller should keep the
-        whole group).
-        """
         for i in range(1, len(group)):
             role = group[i][0]
             prev_role = group[i - 1][0]
@@ -166,38 +218,11 @@ class CompactionEngine:
                 return i
         return None
 
-    @staticmethod
-    def _safe_tail(history: List[_Row], n: int) -> List[_Row]:
-        """Return the last *n* rows of *history*, nudging the start forward
-        past any dependent roles so the tail is always structurally valid.
-
-        This is the single authoritative place that computes a safe tail
-        slice — every code path that needs to return a partial history must
-        go through here.
-        """
-        if not history or n <= 0:
-            return []
-        tail_start = max(0, len(history) - n)
-        # Nudge forward until we land on a role that can legally open a
-        # message sequence (i.e. is not a structural dependent).
-        while tail_start < len(history) and history[tail_start][0] in _DEPENDENT_ROLES:
-            tail_start += 1
-        return history[tail_start:]
-
     # ------------------------------------------------------------------
     # Core compaction
     # ------------------------------------------------------------------
 
     def compact_history(self, history: List[_Row]) -> List[_Row]:
-        """Summarise the oldest portion of *history* and return the remainder.
-
-        The summary is stored in ``self.context_summary`` and folded into the
-        next call to ``build_messages`` via the ``context_summary`` parameter.
-        No ``compacted`` row is inserted into the returned history.
-
-        If a previous summary exists it is provided to the summariser so the
-        new summary is cumulative (the model merges old + new context).
-        """
         print(
             f"[compaction] compact_history called,"
             f" history len={len(history)},"
@@ -212,23 +237,19 @@ class CompactionEngine:
         turns = self._group_into_turns(history)
         threshold_tokens = int(self.threshold * 0.75)
 
-        # Walk turns from oldest, accumulating rows to summarise, until what
-        # remains fits comfortably within the token budget.
         to_summarise: List[_Row] = []
         remaining_turns: List[List[_Row]] = list(turns)
 
         while remaining_turns:
-            # Flatten remaining turns to check token count.
             remaining_flat = [row for t in remaining_turns for row in t]
             if self.total_tokens(remaining_flat) <= threshold_tokens:
-                break  # Remaining history already fits.
+                break
 
             candidate_turn = remaining_turns[0]
-
-            # If dropping this turn would leave nothing, try an intra-turn
-            # split instead of dropping everything.
             after_drop = [row for t in remaining_turns[1:] for row in t]
+
             if not after_drop:
+                # Last remaining turn.
                 split_idx = self._find_safe_split(candidate_turn)
                 if split_idx is not None:
                     to_summarise.extend(candidate_turn[:split_idx])
@@ -239,24 +260,24 @@ class CompactionEngine:
                         file=sys.stderr,
                     )
                 else:
-                    # Absolute last resort: no turn boundaries and no safe
-                    # intra-turn split exist.  Summarise the entire history
-                    # and keep only a structurally safe tail.
+                    # No structural split possible — truncate tool results to
+                    # make the turn fit, summarise what we have, return truncated turn.
                     print(
-                        "[compaction] cannot split last remaining turn,"
-                        " summarising entire history",
+                        "[compaction] cannot split last remaining turn —"
+                        " truncating oversized tool results in place",
                         file=sys.stderr,
                     )
-                    self.context_summary = self._call_summariser(history)
-                    tail = self._safe_tail(history, self.tail_messages)
+                    truncated = self._truncate_tool_results(
+                        candidate_turn, threshold_tokens
+                    )
+                    self.context_summary = self._call_summariser(
+                        to_summarise if to_summarise else history
+                    )
                     with self._cache_lock:
                         self._cache.clear()
-                    return tail
+                    return truncated
                 break
 
-            # If the candidate turn alone exceeds the threshold, split it
-            # rather than dropping it wholesale so the summariser sees all
-            # the content it should.
             turn_tokens = self.total_tokens(candidate_turn)
             if turn_tokens >= threshold_tokens:
                 split_idx = self._find_safe_split(candidate_turn)
@@ -269,13 +290,17 @@ class CompactionEngine:
                         file=sys.stderr,
                     )
                     continue
-                # No safe split — drop the whole oversized turn rather than
-                # overflow the context window.
+                # No safe split — truncate tool results so it fits.
                 print(
                     f"[compaction] oversized turn with no safe split"
-                    f" ({turn_tokens} tokens) — dropping whole turn",
+                    f" ({turn_tokens} tokens) — truncating tool results",
                     file=sys.stderr,
                 )
+                remaining_turns[0] = self._truncate_tool_results(
+                    candidate_turn, threshold_tokens
+                )
+                to_summarise.extend(remaining_turns.pop(0))
+                continue
 
             to_summarise.extend(remaining_turns.pop(0))
 
@@ -284,6 +309,16 @@ class CompactionEngine:
             return history
 
         remaining_history = [row for t in remaining_turns for row in t]
+
+        # Guard: never return empty history.
+        if not remaining_history:
+            print(
+                "[compaction] remaining_history empty after loop —"
+                " falling back to safe tail",
+                file=sys.stderr,
+            )
+            remaining_history = self._safe_tail(history, self.tail_messages)
+
         print(
             f"[compaction] summarising {len(to_summarise)} rows,"
             f" keeping {len(remaining_history)} rows",
@@ -302,17 +337,13 @@ class CompactionEngine:
     # ------------------------------------------------------------------
 
     def _call_summariser(self, older: List[_Row]) -> str:
-        """Send *older* rows to the summarisation model and return the text.
+        # Truncate older before building messages so the summariser call
+        # itself doesn't overflow the context window.
+        older = self._truncate_tool_results(older, self.threshold * 2)
 
-        If ``self.context_summary`` is non-empty it is injected as an extra
-        system message before the older history so the model can fold the
-        previous summary into the new one — no extra API round-trip needed.
-        """
         messages = build_messages(older, self.system_prompt)
 
-        # Inject the previous rolling summary so the model merges it.
         if self.context_summary:
-            # Insert right after the system prompt (index 0).
             messages.insert(1, {
                 "role": "system",
                 "content": (
@@ -321,18 +352,15 @@ class CompactionEngine:
                 ),
             })
 
-        # Strip output-only fields that inference servers reject.
         for msg in messages:
             msg.pop("reasoning_content", None)
 
-        # Remove dangling tool_calls from the last assistant message so the
-        # summariser does not see an incomplete tool-call sequence.
+        # Remove dangling tool_calls from the last assistant message.
         if messages and messages[-1].get("role") == "assistant":
             messages[-1].pop("tool_calls", None)
             if not messages[-1].get("content"):
                 messages.pop()
 
-        # Two-turn prompt that elicits the summary.
         messages.append({"role": "user", "content": "we are running out of context window"})
         messages.append({"role": "assistant", "content": self.summary_prompt})
 
