@@ -293,7 +293,7 @@ class CompactionEngine:
 
         messages.append({
             "role": "user",
-            "content": this.summary_prompt,
+            "content": self.summary_prompt,
         })
 
         _log.debug(f"sending {len(messages)} messages to summariser")

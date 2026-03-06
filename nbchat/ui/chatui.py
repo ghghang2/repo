@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ipywidgets as widgets
 import json
+import logging
 import re
 import threading
 import time
@@ -17,6 +18,8 @@ from nbchat.ui import chat_builder
 from nbchat.core import compaction
 from nbchat.ui.utils import changed_files
 from nbchat.core.utils import lazy_import
+
+_log = logging.getLogger("nbchat.compaction")
 
 
 class ChatUI:
@@ -39,7 +42,6 @@ class ChatUI:
             system_prompt=self.system_prompt,
         )
         self.session_id = str(uuid.uuid4())
-        # (role, content, tool_id, tool_name, tool_args)
         self.history: List[Tuple[str, str, str, str, str]] = []
         self._stop_streaming = False
         self._stream_thread = None
@@ -165,14 +167,11 @@ class ChatUI:
     def _load_history(self):
         db = lazy_import("nbchat.core.db")
         self.history = db.load_history(self.session_id)
-        # Restore the rolling summary so the engine has context after a reload.
         self.compaction_engine.context_summary = db.load_context_summary(self.session_id)
         self._render_history()
 
     def _render_history(self):
         children = []
-        # If the engine holds a rolling summary (post-compaction), show it
-        # at the top of the chat so the user knows context was compacted.
         if self.compaction_engine.context_summary:
             children.append(
                 renderer.render_compacted_summary(self.compaction_engine.context_summary)
@@ -199,7 +198,6 @@ class ChatUI:
             elif role == "system":
                 children.append(renderer.render_system(content))
             elif role == "compacted":
-                # Legacy rows from old DB sessions — still render them.
                 children.append(renderer.render_compacted_summary(content))
         self.chat_history.children = children
 
@@ -215,10 +213,9 @@ class ChatUI:
         self.chat_history.children = list(self.chat_history.children) + [widget]
 
     # ------------------------------------------------------------------
-    # Compaction — synchronous, runs inside the stream thread
+    # Compaction
     # ------------------------------------------------------------------
     def _build_messages(self) -> list:
-        """Build API messages, always threading in the rolling context summary."""
         messages = chat_builder.build_messages(
             self.history,
             self.system_prompt,
@@ -229,38 +226,51 @@ class ChatUI:
         return messages
 
     def _compact_now(self, messages: list) -> bool:
-        """Compact history if threshold exceeded.
-
-        Runs synchronously in the stream thread. Updates ``self.history``,
-        the DB, and rebuilds ``messages`` in-place so the next API call
-        sends only the compacted context.
-
-        Returns True if compaction was performed.
-        """
         if not self.compaction_engine.should_compact(self.history):
             return False
 
         db = lazy_import("nbchat.core.db")
-        import sys
+
+        _log.debug(
+            f"_compact_now: before: history={len(self.history)} rows, "
+            f"context_summary={len(self.compaction_engine.context_summary)} chars"
+        )
 
         try:
             new_history = self.compaction_engine.compact_history(list(self.history))
         except Exception as e:
-            print(f"[compaction] failed: {e}", file=sys.stderr)
-            return False
+            # Log to compaction.log — exceptions here are invisible in Jupyter
+            # stderr since this runs in a daemon thread.
+            _log.debug(
+                f"compact_history raised {type(e).__name__}: {e}",
+                exc_info=True,
+            )
+            # Summarisation failed — still truncate to tail so we don't keep
+            # growing past the context limit.
+            new_history = self.compaction_engine._safe_tail(
+                list(self.history), self.compaction_engine.tail_messages
+            )
+            self.compaction_engine.context_summary = (
+                (self.compaction_engine.context_summary + "\n"
+                 if self.compaction_engine.context_summary else "") +
+                "[Summarisation failed — earlier context was dropped.]"
+            ).strip()
+
+        _log.debug(
+            f"_compact_now: after: history={len(new_history)} rows, "
+            f"context_summary={len(self.compaction_engine.context_summary)} chars"
+        )
 
         self.history = new_history
         db.replace_session_history(self.session_id, new_history)
-        # Persist the rolling summary so it survives kernel restarts.
+
         summary = self.compaction_engine.context_summary
         if summary:
             db.save_context_summary(self.session_id, summary)
 
-        # Rebuild the messages list with the fresh summary injected.
         messages.clear()
         messages.extend(self._build_messages())
 
-        # Show compaction notice in the UI using the summary text directly.
         if summary:
             self._append(renderer.render_compacted_summary(summary))
 
@@ -273,7 +283,7 @@ class ChatUI:
         db = lazy_import("nbchat.core.db")
         self.session_id = str(uuid.uuid4())
         self.history = []
-        self.compaction_engine.context_summary = ""  # fresh session, no prior summary
+        self.compaction_engine.context_summary = ""
         options = list(db.get_session_ids())
         if self.session_id not in options:
             options.append(self.session_id)
@@ -293,7 +303,6 @@ class ChatUI:
 
         db = lazy_import("nbchat.core.db")
 
-        # Stop any running stream before starting a new one.
         if self._stream_thread and self._stream_thread.is_alive():
             self._stop_streaming = True
             self._stream_thread.join()
@@ -336,7 +345,6 @@ class ChatUI:
                 if content:
                     self.history.append(("assistant", content, "", "", ""))
                     db.log_message(self.session_id, "assistant", content)
-                # Check compaction after a plain assistant reply.
                 self._compact_now(messages)
                 break
 
@@ -347,7 +355,6 @@ class ChatUI:
                 db.log_message(self.session_id, "assistant", warning)
                 break
 
-            # --- tool-calling turn ---
             full_msg = {
                 "role": "assistant",
                 "content": content,
@@ -370,10 +377,8 @@ class ChatUI:
                 messages.append(
                     {"role": "tool", "tool_call_id": tc["id"], "content": result}
                 )
-                # Always render the tool result immediately.
                 self._append(renderer.render_tool(result, tool_name, tool_args))
 
-            # Compact after each full tool round-trip.
             self._compact_now(messages)
 
     # ------------------------------------------------------------------
