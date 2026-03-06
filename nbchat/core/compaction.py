@@ -217,7 +217,7 @@ class CompactionEngine:
             _log.debug(
                 "only one unit — truncating tool results to fit budget"
             )
-            tail_budget = int(self.threshold * 0.50)
+            tail_budget = int(self.threshold * 0.25)
             truncated = self._truncate_tool_results(history, tail_budget)
             # Still produce a summary stub so context_summary is non-empty
             # and the model knows something was trimmed.
@@ -249,7 +249,7 @@ class CompactionEngine:
 
         # Truncate oversized tool results in the tail so retained rows
         # don't themselves blow the budget.
-        tail_budget = int(self.threshold * 0.50)
+        tail_budget = int(self.threshold * 0.25)
         remaining_history = self._truncate_tool_results(remaining_history, tail_budget)
 
         _log.debug(
@@ -271,7 +271,7 @@ class CompactionEngine:
     # ------------------------------------------------------------------
 
     def _call_summariser(self, older: List[_Row]) -> str:
-        older = self._truncate_tool_results(older, self.threshold * 2)
+        older = self._truncate_tool_results(older, int(self.threshold * 0.40))
         messages = build_messages(older, self.system_prompt)
 
         if self.context_summary:

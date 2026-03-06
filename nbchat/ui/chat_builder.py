@@ -20,21 +20,23 @@ def build_messages(
         The system message to prepend.
     context_summary:
         Rolling summary produced by CompactionEngine.  When non-empty it is
-        injected as a second system message immediately after the main system
-        prompt so the model always has the prior context even after rows have
-        been dropped from history.
+        merged into the single system message so llama.cpp chat templates
+        that only honour one system block still receive the summary.
     """
-    messages: List[Dict[str, str]] = [{"role": "system", "content": system_prompt}]
-
-    # Inject the rolling compaction summary right after the system prompt.
+    # Merge summary into the system prompt rather than adding a second system
+    # message — most llama.cpp chat templates silently drop additional system
+    # blocks or only render the first one.
     if context_summary:
-        messages.append({
-            "role": "system",
-            "content": (
-                "Summary of the conversation so far (before the messages below):\n"
-                + context_summary
-            ),
-        })
+        system_content = (
+            system_prompt
+            + "\n\n--- SUMMARY OF EARLIER CONVERSATION ---\n"
+            + context_summary
+            + "\n--- END SUMMARY ---"
+        )
+    else:
+        system_content = system_prompt
+
+    messages: List[Dict[str, str]] = [{"role": "system", "content": system_content}]
 
     for role, content, tool_id, tool_name, tool_args in history:
         if role == "user":
@@ -44,13 +46,11 @@ def build_messages(
                 messages.append({
                     "role": "assistant",
                     "content": content,
-                    "tool_calls": [
-                        {
-                            "id": tool_id,
-                            "type": "function",
-                            "function": {"name": tool_name, "arguments": tool_args},
-                        }
-                    ],
+                    "tool_calls": [{
+                        "id": tool_id,
+                        "type": "function",
+                        "function": {"name": tool_name, "arguments": tool_args},
+                    }],
                 })
             else:
                 messages.append({"role": "assistant", "content": content})
@@ -69,8 +69,9 @@ def build_messages(
                 "content": content,
             })
         elif role == "compacted":
-            # Legacy rows from old sessions — surface as a system message.
-            messages.append({"role": "system", "content": content})
+            # Legacy rows from old sessions — merge into system content
+            # rather than adding another system block.
+            messages[0]["content"] += "\n\n" + content
 
     return messages
 
